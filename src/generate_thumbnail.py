@@ -13,16 +13,33 @@ client = OpenAI(api_key=api_key)
 CACHE_FILE = "bird_descriptions.json"
 
 def load_cached_descriptions():
+    """
+    Load cached bird descriptions from a local JSON file.
+    Returns:
+        dict: Cached descriptions keyed by bird species.
+    """
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, "r") as f:
             return json.load(f)
     return {}
 
 def save_cached_descriptions(cache):
+    """
+    Save bird descriptions to the local JSON cache.
+    Args:
+        cache (dict): Dictionary of bird species to descriptions.
+    """
     with open(CACHE_FILE, "w") as f:
         json.dump(cache, f, indent=2)
 
 def get_description_section(bird_species):
+    """
+    Attempts to extract the 'Description' section from a Wikipedia article.
+    Args:
+        bird_species (str): Name of the bird species.
+    Returns:
+        str: The extracted description or an error message.
+    """
     try:
         page = wikipedia.page(bird_species, auto_suggest=False)
         content = page.content
@@ -37,6 +54,13 @@ def get_description_section(bird_species):
         return f"[ERROR] {e}"
 
 def get_bird_description(bird_species):
+    """
+    Retrieves a bird's description from the cache or Wikipedia.
+    Args:
+        bird_species (str): Name of the bird species.
+    Returns:
+        str: A textual description of the bird.
+    """
     cache = load_cached_descriptions()
     if bird_species in cache:
         print(f"[INFO] Using cached description for '{bird_species}'")
@@ -72,6 +96,15 @@ def get_bird_description(bird_species):
     return f"A photorealistic image of a {bird_species} in its natural habitat, centered in the frame, soft natural background, good lighting."
 
 def generate_image_prompt(bird_species, description):
+    """
+    Sends a bird description to OpenAI's chat model to generate a concise image prompt.
+    Args:
+        bird_species (str): Name of the bird.
+        description (str): Wikipedia-derived description of the bird.
+    Returns:
+        str: A short, image-generation-friendly prompt.
+    """
+
     try:
         print("[INFO] Sending description to OpenAI to generate a concise prompt...")
         messages = [
@@ -89,6 +122,13 @@ def generate_image_prompt(bird_species, description):
         return f"A photorealistic image of a {bird_species} in its natural habitat. The bird is centered in frame with good lighting and visible feather details."
 
 def generate_bird_thumbnail(bird_species):
+    """
+    Generates a DALL·E 3 image of a bird species using Wikipedia and OpenAI to build a detailed prompt.
+    Args:
+        bird_species (str): Name of the bird to generate.
+    Returns:
+        str: URL of the generated image.
+    """
     description = get_bird_description(bird_species)
     prompt = generate_image_prompt(bird_species, description)
     
