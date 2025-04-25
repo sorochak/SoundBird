@@ -15,7 +15,7 @@ def generate_image_prompt(bird_species, description):
     try:
         print("[INFO] Sending description to OpenAI to generate a concise prompt...")
         messages = [
-            {"role": "system", "content": "You are a prompt writer for a photorealistic bird image generator."},
+            {"role": "system", "content": "You are a prompt writer for photorealistic bird images. Do not include measurements, text labels, diagrams, or species comparisons. Focus on feather color, posture, and environment only."},
             {"role": "user", "content": f"Create a concise image generation prompt for a {bird_species}, based on this description:\n\n{description}\n\nKeep it under 4000 characters and include visual traits and environment."}
         ]
         chat_response = client.chat.completions.create(
