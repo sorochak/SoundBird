@@ -1,4 +1,17 @@
-.env
-venv/
-__pycache__/
+# Python
 *.py[cod]
+__pycache__/
+venv/
+
+# Environment files
+.env
+
+# Project-specific data
+recordings/
+outputs/
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
