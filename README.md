@@ -22,6 +22,27 @@ SoundBird is currently under active development. It will allow users to:
 - **Automated Data Pipeline**: Processes large batches of field recordings into structured outputs, saving results as `.csv` and `.json`.
 - **Scalable Web Architecture**: Designed to grow into a cloud-based platform with map-based exploration, detection timelines, habitat overlays, and more.
 
+---
+
+## System Architecture Overview
+
+🛠️ SoundBird is currently under active development.  
+The following system diagrams reflect the **planned system architecture** and current **audio upload flow**.
+
+### Planned System Architecture
+
+![SoundBird System Architecture](docs/architecture/soundbird-system-architecture-transparent.png)
+
+---
+
+### Audio Upload Flow
+
+_This diagram shows the step-by-step flow when a user uploads an audio file for species detection:_
+
+![SoundBird Audio Upload Flow](docs/architecture/soundbird-audio-upload-flow-transparent.png)
+
+---
+
 ## Installation
 
 1. **Clone the repository:**
