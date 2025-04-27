@@ -26,7 +26,7 @@ SoundBird is currently under active development. It will allow users to:
 
 ## System Architecture Overview
 
-🛠️ SoundBird is currently under active development.  
+SoundBird is currently under active development.  
 The following system diagrams reflect the **planned system architecture** and current **audio upload flow**.
 
 ### Planned System Architecture
