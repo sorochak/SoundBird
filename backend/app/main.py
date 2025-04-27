@@ -1,5 +1,7 @@
 # main.py
 from fastapi import FastAPI
+from backend.app.routes.analyze import router as analyze_router
+
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -14,3 +16,6 @@ def health_check():
         dict: A simple message indicating the server is running.
     """
     return {"status": "OK", "message": "Server is running."}
+
+
+app.include_router(analyze_router, prefix="/api")
