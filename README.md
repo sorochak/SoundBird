@@ -29,10 +29,10 @@ SoundBird is currently under active development. It will allow users to:
 🛠️ SoundBird is currently under active development.  
 The following system diagrams reflect the **planned system architecture** and current **audio upload flow**.
 
-<h3>Planned System Architecture</h3>
+### Planned System Architecture
 
 <p align="center">
-  <img src="docs/architecture/soundbird-system-architecture-transparent.png" width="700px">
+  <img src="docs/architecture/soundbird-system-architecture-transparent.png" width="500px">
 </p>
 
 ---
