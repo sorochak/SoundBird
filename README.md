@@ -2,7 +2,7 @@
 
 **SoundBird** is a full-stack web application for analyzing bird audio recordings, detecting species, visualizing biodiversity patterns, and sharing discoveries.
 
-Built for researchers, conservationists, and nature enthusiasts, SoundBird enables users to upload field recordings (e.g., from devices like AudioMoth), automatically detect bird species using machine learning models like BirdNET, and explore the results through an interactive frontend.  
+Built for researchers, conservationists, and nature enthusiasts, SoundBird enables users to upload field recordings (e.g., from devices like [AudioMoth](https://www.openacousticdevices.info/audiomoth)), automatically detect bird species using machine learning models like BirdNET, and explore the results through an interactive frontend.  
 The system highlights species presence across time and location, generates AI-assisted species thumbnails, and flags endangered or at-risk species based on detections.
 It transforms raw acoustic data into dynamic visualizations, species profiles, and conservation insights — making bioacoustics research more accessible, engaging, and actionable.
 
