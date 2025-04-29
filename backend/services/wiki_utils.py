@@ -3,9 +3,15 @@
 import os
 import json
 import wikipedia
+import logging
+
+# Set up simple logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Path to cached descriptions
 CACHE_FILE = "bird_descriptions.json"
+
 
 def load_cached_descriptions():
     """
@@ -18,6 +24,7 @@ def load_cached_descriptions():
             return json.load(f)
     return {}
 
+
 def save_cached_descriptions(cache):
     """
     Save bird descriptions to the local JSON cache.
@@ -26,6 +33,7 @@ def save_cached_descriptions(cache):
     """
     with open(CACHE_FILE, "w") as f:
         json.dump(cache, f, indent=2)
+
 
 def get_description_section(bird_species):
     """
@@ -38,54 +46,56 @@ def get_description_section(bird_species):
     try:
         page = wikipedia.page(bird_species, auto_suggest=False)
         content = page.content
-        sections = content.split('\n==')
+        sections = content.split("\n==")
 
         for section in sections:
-            if section.lower().startswith(" description") or "\n===Description" in section:
+            if (
+                section.lower().startswith(" description")
+                or "\n===Description" in section
+            ):
                 return section.replace("===", "").replace("==", "").strip()
-        
+
         return "[ERROR] No 'Description' section found in Wikipedia page."
     except Exception as e:
         return f"[ERROR] {e}"
-    
+
+
 def get_bird_description(bird_species):
     """
     Retrieves a bird's description from the cache or Wikipedia.
-    Args:
-        bird_species (str): Name of the bird species.
-    Returns:
-        str: A textual description of the bird.
+    Falls back to a safe generic prompt if no detailed description is found.
     """
     cache = load_cached_descriptions()
     if bird_species in cache:
-        print(f"[INFO] Using cached description for '{bird_species}'")
+        logger.info(f"[CACHE] Using cached description for '{bird_species}'")
         return cache[bird_species]
 
     try:
         description = get_description_section(bird_species)
         if "[ERROR]" not in description:
-            print(f"[INFO] Detailed Wikipedia description found for '{bird_species}'")
+            logger.info(
+                f"[WIKI] Detailed Wikipedia description found for '{bird_species}'"
+            )
             cache[bird_species] = description
             save_cached_descriptions(cache)
             return description
         else:
-            print(f"[WARNING] Fallback to short summary for '{bird_species}'")
-            summary = wikipedia.summary(bird_species, sentences=3, auto_suggest=False)
-            cache[bird_species] = summary
-            save_cached_descriptions(cache)
-            return summary
+            logger.warning(
+                f"[FALLBACK] No 'Description' section found for '{bird_species}'. Using safe fallback prompt."
+            )
     except wikipedia.exceptions.DisambiguationError as e:
-        print(f"[WARNING] Disambiguation for '{bird_species}', trying: {e.options[0]}")
-        try:
-            description = get_description_section(e.options[0])
-            cache[bird_species] = description
-            save_cached_descriptions(cache)
-            return description
-        except Exception as e2:
-            print(f"[ERROR] Disambiguation fallback failed: {e2}")
+        logger.warning(
+            f"[DISAMBIGUATION] Multiple pages for '{bird_species}': {e.options}. Fallback triggered."
+        )
     except wikipedia.exceptions.PageError:
-        print(f"[WARNING] No Wikipedia page found for '{bird_species}'")
+        logger.warning(
+            f"[MISSING PAGE] No Wikipedia page found for '{bird_species}'. Fallback triggered."
+        )
     except Exception as e:
-        print(f"[ERROR] Wikipedia error: {e}")
+        logger.error(f"[ERROR] Unexpected Wikipedia error for '{bird_species}': {e}")
 
-    return f"A photorealistic image of a {bird_species} in its natural habitat, centered in the frame, soft natural background, good lighting."
+    # Fallback: safe default prompt
+    fallback_description = f"A photorealistic image of a {bird_species} in its natural habitat. The bird is centered in frame with good lighting and visible feather details."
+    cache[bird_species] = fallback_description
+    save_cached_descriptions(cache)
+    return fallback_description
