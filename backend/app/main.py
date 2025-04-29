@@ -7,6 +7,15 @@ from backend.app.routes.analyze import router as analyze_router
 app = FastAPI()
 
 
+# Root endpoint
+@app.get("/")
+def root():
+    return {
+        "message": "Welcome to the SoundBird API. Visit /docs for documentation.",
+        "status": "OK",
+    }
+
+
 # Health check endpoint
 @app.get("/health")
 def health_check():
