@@ -11,7 +11,11 @@ from tqdm import tqdm
 
 
 def analyze_audio_directory(
-    directory_path, lat=48.52, lon=-123.40, output_dir="./outputs"
+    directory_path,
+    lat=48.52,
+    lon=-123.40,
+    output_dir="./outputs",
+    output_name="predictions",
 ):
     """
     Analyze all WAV files in the specified directory using BirdNETlib and save the predictions.
@@ -21,6 +25,7 @@ def analyze_audio_directory(
         lat (float): Latitude of the recording location.
         lon (float): Longitude of the recording location.
         output_dir (str): Directory to save prediction outputs.
+        output_name (str): Base name for output files (without extension).
     """
     # Initialize BirdNET-Analyzer model
     analyzer = Analyzer()
@@ -94,11 +99,11 @@ def analyze_audio_directory(
             print(f"Error analyzing '{wav_file.name}': {e}\n")
 
     # Save all results
-    json_path = Path(output_dir) / "predictions.json"
+    json_path = Path(output_dir) / f"{output_name}.json"
     with open(json_path, "w") as f:
         json.dump(all_results, f, indent=2)
 
-    csv_path = Path(output_dir) / "predictions.csv"
+    csv_path = Path(output_dir) / f"{output_name}.csv"
     with open(csv_path, "w", newline="") as f:
         writer = csv.DictWriter(
             f,
