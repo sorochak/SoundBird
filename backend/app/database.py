@@ -40,3 +40,33 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Base class for ORM models
 Base = declarative_base()
+
+
+# Dependency to get the database session
+def get_db():
+    """
+    Dependency to get a database session.
+    Yields:
+        Session: A new database session.
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+# Note: The get_db function is used in the FastAPI routes to provide a database session for each request.
+# This ensures that the session is properly closed after the request is completed.
+# This is important for resource management and preventing connection leaks.
+# Example usage in a FastAPI route:
+# from fastapi import Depends
+# from sqlalchemy.orm import Session
+# from .database import get_db
+# from .models import YourModel
+# from .schemas import YourSchema
+#
+# @router.post("/your-endpoint")
+# def create_item(item: YourSchema, db: Session = Depends(get_db)):
+#     db_item = YourModel(**item.dict())
+#     db.add(db_item)
