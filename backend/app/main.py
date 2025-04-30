@@ -1,10 +1,16 @@
 # main.py
 from fastapi import FastAPI
 from backend.app.routes.analyze import router as analyze_router
-
+from .database import Base, engine
+from .models import Detections
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# Auto-create tables at startup
+Base.metadata.create_all(bind=engine)
+# NOTES:
+# Remove Base.metadata.create_all(bind=engine) when switching to Alembic migrations in production.
 
 
 # Root endpoint
