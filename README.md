@@ -82,7 +82,7 @@ OPENAI_API_KEY=your-openai-api-key-here
 Run batch analysis of your `.wav` recordings (requires BirdNET models installed):
 
 ```bash
-python scripts/run_audio_analysis.py
+python backend/services/run_audio_analysis.py
 ```
 
 This will analyze all `.wav` files inside the `./recordings/YYYYMMDD/` folder and output detection results to `./outputs/`.
@@ -92,7 +92,7 @@ This will analyze all `.wav` files inside the `./recordings/YYYYMMDD/` folder an
 This was primarily used to test thumbnail generation. It will be integrated into the web app pipeline in production.
 
 ```bash
-python src/generate_thumbnail.py "American Goldfinch"
+python src/generate_thumbnail.py "Savannah Sparrow"
 ```
 
 ## Requirements
