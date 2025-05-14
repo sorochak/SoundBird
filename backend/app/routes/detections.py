@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
-from app.models import detection as detection_model
-from app.schemas import detection as detection_schema
-from app.crud import detection as crud_detection
+from backend.app.models import detection as detection_model
+from backend.app.schemas import detection as detection_schema
+from backend.app.crud import detection as crud_detection
 from ..database import get_db
 
 router = APIRouter()
@@ -65,3 +65,15 @@ def create_detections(
     Returns the inserted detections with their generated ID and created_at fields.
     """
     return crud_detection.create_detections(db, detections)
+
+
+@router.delete("/detections/{detection_id}", status_code=204)
+def delete_detection(detection_id: int, db: Session = Depends(get_db)):
+    """
+    Delete a detection by its ID.
+    Returns 204 if deleted, 404 if not found.
+    """
+    deleted = crud_detection.delete_detection(db, detection_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Detection not found")
+    return

@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
-from app.models import Detections
-from app.schemas.detection import DetectionCreate
+from backend.app.models.detection import Detections
+from backend.app.schemas.detection import DetectionCreate
 
 
 # Get a single detection from the database by its ID.
@@ -81,3 +81,16 @@ def get_detections(
             query = query.order_by(getattr(sort_column, sort_order)())
 
     return query.offset(skip).limit(limit).all()
+
+
+def delete_detection(db: Session, detection_id: int) -> bool:
+    """
+    Delete a detection by its ID.
+    Returns True if the detection was deleted, False if not found.
+    """
+    detection = db.query(Detections).filter(Detections.id == detection_id).first()
+    if detection is None:
+        return False
+    db.delete(detection)
+    db.commit()
+    return True
