@@ -10,7 +10,7 @@ from ..database import get_db
 router = APIRouter()
 
 
-@router.get("/detections", response_model=List[schemas.Detection])
+@router.get("/detections", response_model=List[detection_schema.Detection])
 def get_detections(
     db: Session = Depends(get_db),
     skip: int = 0,
@@ -18,7 +18,7 @@ def get_detections(
     species: Optional[str] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
-    # user_id: Optional[int] = None,
+    user_id: Optional[int] = None,
     sort_by: Optional[str] = Query(None, enum=["detection_time", "confidence"]),
     sort_order: Optional[str] = Query("desc", enum=["asc", "desc"]),
 ):
@@ -34,22 +34,22 @@ def get_detections(
     query = db.query(detection_model.Detections)
 
     if species:
-        query = query.filter(models.Detections.species.ilike(f"%{species}%"))
+        query = query.filter(detection_model.Detections.species.ilike(f"%{species}%"))
 
     if user_id:
-        query = query.filter(models.Detections.user_id == user_id)
+        query = query.filter(detection_model.Detections.user_id == user_id)
 
     if start_date and end_date:
         query = query.filter(
-            models.Detections.detection_time.between(start_date, end_date)
+            detection_model.Detections.detection_time.between(start_date, end_date)
         )
     elif start_date:
-        query = query.filter(models.Detections.detection_time >= start_date)
+        query = query.filter(detection_model.Detections.detection_time >= start_date)
     elif end_date:
-        query = query.filter(models.Detections.detection_time <= end_date)
+        query = query.filter(detection_model.Detections.detection_time <= end_date)
 
     if sort_by:
-        sort_column = getattr(models.Detections, sort_by, None)
+        sort_column = getattr(detection_model.Detections, sort_by, None)
         if sort_column is not None:
             if sort_order == "asc":
                 query = query.order_by(sort_column.asc())
