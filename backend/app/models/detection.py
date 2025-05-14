@@ -1,3 +1,4 @@
+# backend/app/models/detection.py
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from .database import Base
@@ -22,7 +23,7 @@ class Detections(Base):
     image_path = Column(String, index=True)
     sonogram_path = Column(String)
     snippet_path = Column(String)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    # user_id = Column(Integer, ForeignKey("users.id"))
 
     def __repr__(self):
         return (
@@ -41,5 +42,5 @@ class Detections(Base):
             f"image_path='{self.image_path}', "
             f"sonogram_path='{self.sonogram_path}', "
             f"snippet_path='{self.snippet_path}', "
-            f"user_id={self.user_id}>"
+            # f"user_id={self.user_id}>"
         )
