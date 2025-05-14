@@ -1,13 +1,26 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from typing import List, Optional
 from datetime import datetime
 from app.models import detection as detection_model
 from app.schemas import detection as detection_schema
+from app.crud import detection as crud_detection
 from ..database import get_db
 
 router = APIRouter()
+
+
+@router.get("/detections/{detection_id}", response_model=detection_schema.Detection)
+def get_detection(detection_id: int, db: Session = Depends(get_db)):
+    detection = (
+        db.query(detection_model.Detections)
+        .filter(detection_model.Detections.id == detection_id)
+        .first()
+    )
+    if not detection:
+        raise HTTPException(status_code=404, detail="Detection not found")
+    return detection
 
 
 @router.get("/detections", response_model=List[detection_schema.Detection])
@@ -31,35 +44,22 @@ def get_detections(
     - sort_by: 'detection_time' or 'confidence'
     - sort_order: 'asc' or 'desc'
     """
-    query = db.query(detection_model.Detections)
-
-    if species:
-        query = query.filter(detection_model.Detections.species.ilike(f"%{species}%"))
-
-    if user_id:
-        query = query.filter(detection_model.Detections.user_id == user_id)
-
-    if start_date and end_date:
-        query = query.filter(
-            detection_model.Detections.detection_time.between(start_date, end_date)
-        )
-    elif start_date:
-        query = query.filter(detection_model.Detections.detection_time >= start_date)
-    elif end_date:
-        query = query.filter(detection_model.Detections.detection_time <= end_date)
-
-    if sort_by:
-        sort_column = getattr(detection_model.Detections, sort_by, None)
-        if sort_column is not None:
-            if sort_order == "asc":
-                query = query.order_by(sort_column.asc())
-            else:
-                query = query.order_by(sort_column.desc())
-
-    return query.offset(skip).limit(limit).all()
+    return crud_detection.get_detections(
+        db=db,
+        skip=skip,
+        limit=limit,
+        species=species,
+        start_date=start_date,
+        end_date=end_date,
+        user_id=user_id,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
 
 
-@router.post("/detections", response_model=List[detection_schema.Detection])
+@router.post(
+    "/detections", response_model=List[detection_schema.Detection], status_code=201
+)
 def create_detections(
     detections: List[detection_schema.DetectionCreate], db: Session = Depends(get_db)
 ):
@@ -69,9 +69,4 @@ def create_detections(
     Accepts a list of validated DetectionCreate objects and inserts them.
     Returns the inserted detections with their generated ID and created_at fields.
     """
-    db_detections = [detection_model.Detections(**d.dict()) for d in detections]
-    db.add_all(db_detections)
-    db.commit()
-    for det in db_detections:
-        db.refresh(det)
-    return db_detections
+    return crud_detection.create_detections(db, detections)
