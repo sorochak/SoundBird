@@ -13,11 +13,7 @@ router = APIRouter()
 
 @router.get("/detections/{detection_id}", response_model=detection_schema.Detection)
 def get_detection(detection_id: int, db: Session = Depends(get_db)):
-    detection = (
-        db.query(detection_model.Detections)
-        .filter(detection_model.Detections.id == detection_id)
-        .first()
-    )
+    detection = crud_detection.get_detection(db, detection_id)
     if not detection:
         raise HTTPException(status_code=404, detail="Detection not found")
     return detection
