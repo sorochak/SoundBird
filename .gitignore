@@ -9,6 +9,7 @@ venv/
 # Project-specific data
 recordings/
 outputs/
+images/
 
 # macOS
 .DS_Store

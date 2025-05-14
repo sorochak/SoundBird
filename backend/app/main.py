@@ -1,8 +1,9 @@
 # main.py
 from fastapi import FastAPI
 from backend.app.routes.analyze import router as analyze_router
-from .database import Base, engine
-from .models import Detections
+from backend.app.routes.detections import router as detections_router
+from backend.app.database import Base, engine
+from backend.app.models.detection import Detections
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -34,3 +35,4 @@ def health_check():
 
 
 app.include_router(analyze_router, prefix="/api")
+app.include_router(detections_router, prefix="/api")

@@ -1,5 +1,5 @@
 # image_generator.py
-from backend.services.config import client
+from config import client
 from wiki_utils import get_bird_description
 
 
