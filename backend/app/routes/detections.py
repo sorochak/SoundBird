@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
 from typing import List, Optional
 from datetime import datetime
 from app.models import detection as detection_model
