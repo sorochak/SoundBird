@@ -6,9 +6,31 @@ import json
 import csv
 import time
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 from tqdm import tqdm
+import re
 
+
+def calculate_detected_at(filename: str, start_sec: float) -> str:
+    """
+    Calculate the detected_at timestamp based on the filename and detection start time.
+
+    Args:
+        filename (str): WAV file name in the format 'YYYYMMDD_HHMMSS.WAV'
+        start_sec (float): Seconds from start of file when detection occurs
+
+    Returns:
+        str: ISO 8601 formatted timestamp of the detection
+    """
+    
+    match = re.match(r"(\d{8})_(\d{6})\.WAV", filename)
+    if not match:
+        raise ValueError(f"Invalid filename format: {filename}")
+
+    date_str, time_str = match.groups()
+    start_dt = datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H%M%S")
+    detected_dt = start_dt + timedelta(seconds=start_sec)
+    return detected_dt.isoformat()
 
 def analyze_audio_directory(
     directory_path,
@@ -79,22 +101,21 @@ def analyze_audio_directory(
             # Save detections
             for det in recording.detections:
                 try:
+                    start_sec = det.get("start_time", None)
                     result = {
                         "file": wav_file.name,
-                        "start_sec": det.get("start_time", None),
+                        "start_sec": start_sec,
                         "end_sec": det.get("end_time", None),
                         "species": det.get("common_name", "Unknown"),
                         "scientific_name": det.get("scientific_name", "Unknown"),
                         "label": det.get("label", ""),
                         "confidence": det.get("confidence", 0.0),
+                        "detected_at": calculate_detected_at(wav_file.name, start_sec)
+                        if start_sec is not None else None,
                     }
                     all_results.append(result)
                 except Exception as e:
                     print(f"Error saving detection for {wav_file.name}: {e}")
-
-            elapsed = time.time() - start_time
-            print(f"Done in {elapsed:.2f}s\n")
-
         except Exception as e:
             print(f"Error analyzing '{wav_file.name}': {e}\n")
 
@@ -115,6 +136,7 @@ def analyze_audio_directory(
                 "scientific_name",
                 "label",
                 "confidence",
+                "detected_at",
             ],
         )
         writer.writeheader()
