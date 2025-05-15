@@ -5,7 +5,7 @@ from datetime import datetime
 from backend.app.models import detection as detection_model
 from backend.app.schemas import detection as detection_schema
 from backend.app.crud import detection as crud_detection
-from ..database import get_db
+from ....database.config import get_db
 
 router = APIRouter()
 
