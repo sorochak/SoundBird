@@ -5,6 +5,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 from dotenv import load_dotenv
+from pathlib import Path
+
 
 """
 Database Configuration
@@ -22,11 +24,17 @@ postgresql+psycopg2://username:password@hostname:port/dbname
 
 
 # Load .env from project root
-env_path = Path(__file__).resolve().parents[2] / ".env"
+env_path = Path(__file__).resolve().parents[1] / ".env"
 load_dotenv(dotenv_path=env_path)
 
 # Database URL from environment variable, fallback to local SQLite for dev
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL is not set. Make sure you have a .env file in the project root "
+        "and that it contains a valid DATABASE_URL."
+    )
 
 # Create the SQLAlchemy engine
 engine = create_engine(
@@ -55,19 +63,3 @@ def get_db():
         yield db
     finally:
         db.close()
-
-
-# Note: The get_db function is used in the FastAPI routes to provide a database session for each request.
-# This ensures that the session is properly closed after the request is completed.
-# This is important for resource management and preventing connection leaks.
-# Example usage in a FastAPI route:
-# from fastapi import Depends
-# from sqlalchemy.orm import Session
-# from .database import get_db
-# from .models import YourModel
-# from .schemas import YourSchema
-#
-# @router.post("/your-endpoint")
-# def create_item(item: YourSchema, db: Session = Depends(get_db)):
-#     db_item = YourModel(**item.dict())
-#     db.add(db_item)
