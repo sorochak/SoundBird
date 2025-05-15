@@ -21,11 +21,12 @@ postgresql+psycopg2://username:password@hostname:port/dbname
 """
 
 
-# Load environment variables from .env file
-load_dotenv()
+# Load .env from project root
+env_path = Path(__file__).resolve().parents[2] / ".env"
+load_dotenv(dotenv_path=env_path)
 
 # Database URL from environment variable, fallback to local SQLite for dev
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test.db")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Create the SQLAlchemy engine
 engine = create_engine(
