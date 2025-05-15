@@ -8,11 +8,6 @@ from backend.app.models.detection import Detections
 # Initialize FastAPI app
 app = FastAPI()
 
-# Auto-create tables at startup
-Base.metadata.create_all(bind=engine)
-# NOTES:
-# Remove Base.metadata.create_all(bind=engine) when switching to Alembic migrations in production.
-
 
 # Root endpoint
 @app.get("/")
