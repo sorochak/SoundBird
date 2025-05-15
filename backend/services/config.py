@@ -1,6 +1,8 @@
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
+from pathlib import Path
+
 
 # Load .env from project root (two levels up from this file)
 env_path = Path(__file__).resolve().parents[2] / ".env"
