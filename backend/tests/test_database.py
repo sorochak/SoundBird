@@ -1,7 +1,7 @@
 # backend/tests/test_database.py
 
 import pytest
-from backend.app.database import SessionLocal
+from database.config import SessionLocal
 from sqlalchemy import text
 
 

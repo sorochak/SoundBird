@@ -1,7 +1,7 @@
 # backend/app/models/detection.py
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
 from sqlalchemy.sql import func
-from backend.app.database import Base
+from database.config import Base
 
 
 class Detections(Base):

@@ -1,4 +1,4 @@
-from backend.app.database import SessionLocal, engine
+from database.config import SessionLocal, engine
 from sqlalchemy import text
 
 

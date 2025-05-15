@@ -75,6 +75,14 @@ Create a `.env` file in the root folder:
 OPENAI_API_KEY=your-openai-api-key-here
 ```
 
+---
+
+## Database Setup (PostgreSQL + Alembic)
+
+SoundBird uses PostgreSQL as its database and Alembic for schema migrations.
+
+➡️ See [`database/README.md`](database/README.md) for full setup and migration instructions.
+
 ## Usage
 
 ### Analyze Audio Files
