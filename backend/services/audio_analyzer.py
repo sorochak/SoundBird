@@ -1,6 +1,8 @@
 # audio_analyzer.py
 from birdnetlib import Recording
 from birdnetlib.analyzer import Analyzer
+from backend.app.models.detection import Detections
+from database.config import SessionLocal
 import os
 import json
 import csv
@@ -102,7 +104,6 @@ def analyze_audio_file(
                 "end_sec": det.get("end_time", None),
                 "species": det.get("common_name", "Unknown"),
                 "scientific_name": det.get("scientific_name", "Unknown"),
-                "label": det.get("label", ""),
                 "confidence": det.get("confidence", 0.0),
                 "lat": lat,
                 "lon": lon,
@@ -113,6 +114,19 @@ def analyze_audio_file(
             results.append(result)
         except Exception as e:
             logger.exception(f"Error saving detection for {file_path.name}")
+            
+        # save detections from this file to the database
+        if results:
+            db = SessionLocal()
+            try:
+                db.add_all([Detections(**d) for d in results])
+                db.commit()
+                logger.info(f"Inserted {len(results)} detections into DB for {file_path.name}")
+            except Exception as e:
+                db.rollback()
+                logger.error(f"Failed to insert detections into DB for {file_path.name}: {e}")
+            finally:
+                db.close()
     return results
 
 def analyze_audio_directory(
