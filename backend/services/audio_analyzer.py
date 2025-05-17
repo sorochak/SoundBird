@@ -91,8 +91,8 @@ def analyze_audio_file(
 def analyze_audio_directory(
     directory_path: Path,
     analyzer: Analyzer,
-    lat=48.52,
-    lon=-123.40,
+    lat: float,
+    lon: float,
     output_dir="./outputs",
     output_name="predictions",
 ):
