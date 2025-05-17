@@ -171,7 +171,7 @@ def analyze_audio_directory(
         writer = csv.DictWriter(
             f,
             fieldnames=[
-                 "file_name",
+                "file_name",
                 "recording_datetime",
                 "detection_time",
                 "start_sec",
