@@ -25,8 +25,8 @@ def calculate_detected_at(filename: str, start_sec: float) -> str:
     Returns:
         str: ISO 8601 formatted timestamp of the detection
     """
-    
-    match = re.match(r"(\d{8})_(\d{6})\.WAV", filename)
+    filename = filename.lower()
+    match = re.match(r"(\d{8})_(\d{6})\.wav", filename)
     if not match:
         raise ValueError(f"Invalid filename format: {filename}")
 
