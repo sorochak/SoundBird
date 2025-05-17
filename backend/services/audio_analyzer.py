@@ -88,16 +88,27 @@ def analyze_audio_file(
     for det in recording.detections:
         try:
             start_sec = det.get("start_time", None)
+            recording_datetime = get_recording_datetime(file_path.name)
+            detection_time = (
+                calculate_detected_at(file_path.name, start_sec)
+                if start_sec is not None else None
+            )
+
             result = {
-                "file": file_path.name,
+                "file_name": file_path.name,
+                "recording_datetime": recording_datetime,
+                "detection_time": detection_time,
                 "start_sec": start_sec,
                 "end_sec": det.get("end_time", None),
                 "species": det.get("common_name", "Unknown"),
                 "scientific_name": det.get("scientific_name", "Unknown"),
                 "label": det.get("label", ""),
                 "confidence": det.get("confidence", 0.0),
-                "detected_at": calculate_detected_at(file_path.name, start_sec)
-                if start_sec is not None else None,
+                "lat": lat,
+                "lon": lon,
+                "image_path": None,
+                "sonogram_path": None,
+                "snippet_path": None,
             }
             results.append(result)
         except Exception as e:
@@ -160,14 +171,20 @@ def analyze_audio_directory(
         writer = csv.DictWriter(
             f,
             fieldnames=[
-                "file",
+                 "file_name",
+                "recording_datetime",
+                "detection_time",
                 "start_sec",
                 "end_sec",
                 "species",
                 "scientific_name",
                 "label",
                 "confidence",
-                "detected_at",
+                "lat",
+                "lon",
+                "image_path",
+                "sonogram_path",
+                "snippet_path",
             ],
         )
         writer.writeheader()
