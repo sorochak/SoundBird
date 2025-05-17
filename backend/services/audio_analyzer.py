@@ -10,7 +10,9 @@ from typing import List, Dict, Any
 from datetime import datetime, timedelta
 from tqdm import tqdm
 import re
+import logging
 
+logger = logging.getLogger(__name__)
 
 def calculate_detected_at(filename: str, start_sec: float) -> str:
     """
@@ -85,7 +87,7 @@ def analyze_audio_file(
             }
             results.append(result)
         except Exception as e:
-            print(f"Error saving detection for {file_path.name}: {e}")
+            logger.exception(f"Error saving detection for {file_path.name}")
     return results
 
 def analyze_audio_directory(
@@ -117,22 +119,22 @@ def analyze_audio_directory(
 
     all_results = []
 
-    print(f"[INFO] Found {len(wav_files)} audio files in '{directory_path}'")
-    print(f"[INFO] Using lat={lat}, lon={lon}")
-    print(f"[INFO] Output will be saved to '{output_dir}'\n")
+    logger.info(f"Found {len(wav_files)} audio files in '{directory_path}'")
+    logger.info(f"Using lat={lat}, lon={lon}")
+    logger.info(f"Output will be saved to '{output_dir}'\n")
 
     start_total = time.time()
 
     for idx, wav_file in enumerate(tqdm(wav_files, desc="Analyzing audio files", unit="file"), 1):
-        print(f"[{idx}/{len(wav_files)}] Analyzing '{wav_file.name}'...")
+        logger.info(f"[{idx}/{len(wav_files)}] Analyzing '{wav_file.name}'...")
         try:
             detections = analyze_audio_file(wav_file, analyzer, lat, lon)
-            print(f"Detections for {wav_file.name}: {len(detections)}")
+            logger.info(f"Detections for {wav_file.name}: {len(detections)}")
             if detections:
-                print("Sample detection:", detections[0])
+                logger.debug("Sample detection:", detections[0])
             all_results.extend(detections)
         except Exception as e:
-            print(f"Error analyzing '{wav_file.name}': {e}\n")
+            logger.exception(f"Error analyzing '{wav_file.name}': {e}\n")
 
     # Save all results
     json_path = Path(output_dir) / f"{output_name}.json"
@@ -158,7 +160,7 @@ def analyze_audio_directory(
         writer.writerows(all_results)
 
     total_time = time.time() - start_total
-    print(f"[INFO] Analysis complete. {len(all_results)} predictions saved.")
-    print(f" - JSON: {json_path}")
-    print(f" - CSV:  {csv_path}")
-    print(f"[INFO] Total time: {total_time:.2f}s")
+    logger.info(f"[INFO] Analysis complete. {len(all_results)} predictions saved.")
+    logger.info(f" - JSON: {json_path}")
+    logger.info(f" - CSV:  {csv_path}")
+    logger.info(f"[INFO] Total time: {total_time:.2f}s")
