@@ -1,6 +1,8 @@
 # audio_analyzer.py
 from birdnetlib import Recording
 from birdnetlib.analyzer import Analyzer
+from backend.app.models.detection import Detections
+from database.config import SessionLocal
 import os
 import json
 import csv
@@ -14,16 +16,18 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def calculate_detected_at(filename: str, start_sec: float) -> str:
+def get_recording_datetime(filename:str) -> datetime:
     """
-    Calculate the detected_at timestamp based on the filename and detection start time.
+    Extract the recording date and time from the filename.
 
     Args:
         filename (str): WAV file name in the format 'YYYYMMDD_HHMMSS.WAV'
-        start_sec (float): Seconds from start of file when detection occurs
 
     Returns:
-        str: ISO 8601 formatted timestamp of the detection
+        datetime: Recording date and time as a datetime object.
+    
+    Raises:
+        ValueError: If the filename format is invalid.
     """
     filename = filename.lower()
     match = re.match(r"(\d{8})_(\d{6})\.wav", filename)
@@ -31,9 +35,21 @@ def calculate_detected_at(filename: str, start_sec: float) -> str:
         raise ValueError(f"Invalid filename format: {filename}")
 
     date_str, time_str = match.groups()
-    start_dt = datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H%M%S")
-    detected_dt = start_dt + timedelta(seconds=start_sec)
-    return detected_dt.replace(microsecond=0).isoformat()
+    return datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H%M%S")
+
+def calculate_detected_at(filename: str, start_sec: float) -> datetime:
+    """
+    Calculates the actual time a detection occurred, based on the file name and start seconds.
+
+    Args:
+        filename (str): The name of the file.
+        start_sec (float): Seconds after the recording began.
+
+    Returns:
+        datetime: The exact timestamp of the detection.
+    """
+    recording_start = get_recording_datetime(filename)
+    return recording_start + timedelta(seconds=start_sec)
 
 
 def analyze_audio_file(
@@ -74,20 +90,43 @@ def analyze_audio_file(
     for det in recording.detections:
         try:
             start_sec = det.get("start_time", None)
+            recording_datetime = get_recording_datetime(file_path.name)
+            detection_time = (
+                calculate_detected_at(file_path.name, start_sec)
+                if start_sec is not None else None
+            )
+
             result = {
-                "file": file_path.name,
+                "file_name": file_path.name,
+                "recording_datetime": recording_datetime,
+                "detection_time": detection_time,
                 "start_sec": start_sec,
                 "end_sec": det.get("end_time", None),
                 "species": det.get("common_name", "Unknown"),
                 "scientific_name": det.get("scientific_name", "Unknown"),
-                "label": det.get("label", ""),
                 "confidence": det.get("confidence", 0.0),
-                "detected_at": calculate_detected_at(file_path.name, start_sec)
-                if start_sec is not None else None,
+                "lat": lat,
+                "lon": lon,
+                "image_path": None,
+                "sonogram_path": None,
+                "snippet_path": None,
             }
             results.append(result)
         except Exception as e:
             logger.exception(f"Error saving detection for {file_path.name}")
+            
+        # save detections from this file to the database
+        if results:
+            db = SessionLocal()
+            try:
+                db.add_all([Detections(**d) for d in results])
+                db.commit()
+                logger.info(f"Inserted {len(results)} detections into DB for {file_path.name}")
+            except Exception as e:
+                db.rollback()
+                logger.error(f"Failed to insert detections into DB for {file_path.name}: {e}")
+            finally:
+                db.close()
     return results
 
 def analyze_audio_directory(
@@ -146,14 +185,20 @@ def analyze_audio_directory(
         writer = csv.DictWriter(
             f,
             fieldnames=[
-                "file",
+                "file_name",
+                "recording_datetime",
+                "detection_time",
                 "start_sec",
                 "end_sec",
                 "species",
                 "scientific_name",
                 "label",
                 "confidence",
-                "detected_at",
+                "lat",
+                "lon",
+                "image_path",
+                "sonogram_path",
+                "snippet_path",
             ],
         )
         writer.writeheader()
