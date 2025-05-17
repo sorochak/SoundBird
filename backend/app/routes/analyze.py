@@ -30,7 +30,6 @@ async def analyze_audio(
             tmp_path_with_name = tmp_path.with_name(original_filename)
             tmp_path.rename(tmp_path_with_name)
             logger.info(f"Analyzing uploaded file: {original_filename}")
-
             detections = analyze_audio_file(tmp_path_with_name, analyzer, lat, lon)
             return {"detections": detections}
 
@@ -47,7 +46,11 @@ async def analyze_audio(
                 raise HTTPException(status_code=400, detail="Invalid ZIP file")
 
             all_detections = []
-            for wav_file in Path(tmpdir).rglob("*.wav"):
+            
+            wav_files = list(Path(tmpdir).rglob("*.[wW][aA][vV]"))
+            logger.info(f"Found {len(wav_files)} wav files in ZIP archive")
+
+            for wav_file in wav_files:
                 try:
                     results = analyze_audio_file(wav_file, analyzer, lat, lon)
                     all_detections.extend(results)
