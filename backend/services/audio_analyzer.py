@@ -6,6 +6,7 @@ import json
 import csv
 import time
 from pathlib import Path
+from typing import List, Dict, Any
 from datetime import datetime, timedelta
 from tqdm import tqdm
 import re
@@ -30,7 +31,8 @@ def calculate_detected_at(filename: str, start_sec: float) -> str:
     date_str, time_str = match.groups()
     start_dt = datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H%M%S")
     detected_dt = start_dt + timedelta(seconds=start_sec)
-    return detected_dt.isoformat()
+    return detected_dt.replace(microsecond=0).isoformat()
+
 
 def analyze_audio_file(
     file_path: Path,
