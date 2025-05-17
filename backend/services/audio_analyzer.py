@@ -14,16 +14,18 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def calculate_detected_at(filename: str, start_sec: float) -> str:
+def get_recording_datetime(filename:str) -> datetime:
     """
-    Calculate the detected_at timestamp based on the filename and detection start time.
+    Extract the recording date and time from the filename.
 
     Args:
         filename (str): WAV file name in the format 'YYYYMMDD_HHMMSS.WAV'
-        start_sec (float): Seconds from start of file when detection occurs
 
     Returns:
-        str: ISO 8601 formatted timestamp of the detection
+        datetime: Recording date and time as a datetime object.
+    
+    Raises:
+        ValueError: If the filename format is invalid.
     """
     filename = filename.lower()
     match = re.match(r"(\d{8})_(\d{6})\.wav", filename)
@@ -31,9 +33,21 @@ def calculate_detected_at(filename: str, start_sec: float) -> str:
         raise ValueError(f"Invalid filename format: {filename}")
 
     date_str, time_str = match.groups()
-    start_dt = datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H%M%S")
-    detected_dt = start_dt + timedelta(seconds=start_sec)
-    return detected_dt.replace(microsecond=0).isoformat()
+    return datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H%M%S")
+
+def calculate_detected_at(filename: str, start_sec: float) -> datetime:
+    """
+    Calculates the actual time a detection occurred, based on the file name and start seconds.
+
+    Args:
+        filename (str): The name of the file.
+        start_sec (float): Seconds after the recording began.
+
+    Returns:
+        datetime: The exact timestamp of the detection.
+    """
+    recording_start = get_recording_datetime(filename)
+    return recording_start + timedelta(seconds=start_sec)
 
 
 def analyze_audio_file(
