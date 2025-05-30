@@ -1,6 +1,8 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, Text, Enum
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime, Float, Text, Enum as SAEnum
 from sqlalchemy.sql import func
 from database.config import Base
+from datetime import datetime
 import enum
 
 class RecordingStatus(str, enum.Enum):
@@ -12,17 +14,17 @@ class RecordingStatus(str, enum.Enum):
 class Recording(Base):
     __tablename__ = "recordings"
 
-    id = Column(Integer, primary_key=True, index=True)
-    file_name = Column(String, nullable=False)
-    recording_datetime = Column(DateTime(timezone=True), nullable=False)
-    status = Column(Enum(RecordingStatus), default=RecordingStatus.PENDING, nullable=False)
-    duration_sec = Column(Float, nullable=False)
-    lat = Column(Float, nullable=False)
-    lon = Column(Float, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    completed_at = Column(DateTime(timezone=True), nullable=True)
-    error_message = Column(Text, nullable=True)
-    
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    file_name: Mapped[str] = mapped_column(nullable=False)
+    recording_datetime: Mapped[datetime] = mapped_column(nullable=False)
+    status: Mapped[RecordingStatus] = mapped_column(SAEnum(RecordingStatus), default=RecordingStatus.PENDING, nullable=False)
+    duration_sec: Mapped[float] = mapped_column(nullable=False)
+    lat: Mapped[float] = mapped_column(nullable=False)
+    lon: Mapped[float] = mapped_column(nullable=False)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    error_message: Mapped[str | None] = mapped_column(nullable=True)
+
     def __repr__(self):
         return (
             f"<Recording id={self.id}, "
