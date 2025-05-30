@@ -9,7 +9,8 @@ import os
 from database.config import Base
 import backend.app.models
 
-load_dotenv()
+from pathlib import Path
+load_dotenv(dotenv_path=Path(__file__).resolve().parents[2] / ".env", override=True)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
