@@ -18,6 +18,9 @@ async def analyze_audio(
     lon: float = Form(...),
 ):
     analyzer = request.app.state.analyzer
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Uploaded file must have a filename")
+
     filename = file.filename.lower()
 
     if filename.endswith(".wav"):
