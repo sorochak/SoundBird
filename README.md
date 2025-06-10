@@ -17,6 +17,7 @@ SoundBird is currently under active development. It will allow users to:
 ## Current Features
 
 - **Audio Analysis with BirdNET**: Detects bird species automatically from uploaded `.wav` recordings using BirdNET.
+- **Detection Persistence with PostgreSQL**: After each audio file is analyzed, all detections are saved directly to PostgreSQL. Batched inserts improve performance, and detection timestamps are parsed from filenames.
 - **Dynamic Species Thumbnail Generation**: Uses generative AI to create realistic species thumbnails based on real bird traits, enriching species profiles.
 - **Wikipedia Species Descriptions**: Fetches detailed descriptions to enrich detection results.
 - **Automated Data Pipeline**: Processes large batches of field recordings into structured outputs, saving results as `.csv` and `.json`.
@@ -100,7 +101,7 @@ This will analyze all `.wav` files inside the `./recordings/YYYYMMDD/` folder an
 This was primarily used to test thumbnail generation. It will be integrated into the web app pipeline in production.
 
 ```bash
-python src/generate_thumbnail.py "Savannah Sparrow"
+python backend/services/generate_thumbnail.py "Savannah Sparrow"
 ```
 
 ## Requirements
