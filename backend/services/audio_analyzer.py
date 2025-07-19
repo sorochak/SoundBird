@@ -98,8 +98,8 @@ def analyze_audio_file(
 
             result = {
                 "file_name": file_path.name,
-                "recording_datetime": recording_datetime,
-                "detection_time": detection_time,
+                "recording_datetime": recording_datetime.isoformat() if recording_datetime else None,
+                "detection_time": detection_time.isoformat() if detection_time else None,
                 "start_sec": start_sec,
                 "end_sec": det.get("end_time", None),
                 "species": det.get("common_name", "Unknown"),
