@@ -2,8 +2,12 @@
 
 from audio_analyzer import analyze_audio_directory
 from pathlib import Path
+from birdnetlib.analyzer import Analyzer
 
 if __name__ == "__main__":
+    
+    analyzer = Analyzer()
+    
     # Define the path to the audio files directory
     recordings_root = Path("./recordings")
 
@@ -24,7 +28,8 @@ if __name__ == "__main__":
 
         analyze_audio_directory(
             directory_path=day_folder,
-            output_dir=output_folder,
+            analyzer=analyzer,
+            output_dir=str(output_folder),
             lat=48.432785371465926,
             lon=-123.46746108465791,
         )
