@@ -16,9 +16,7 @@ class Recording(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     file_name: Mapped[str] = mapped_column(nullable=False)
-    recording_datetime: Mapped[datetime] = mapped_column(nullable=False)
     status: Mapped[RecordingStatus] = mapped_column(SAEnum(RecordingStatus), default=RecordingStatus.PENDING, nullable=False)
-    duration_sec: Mapped[float] = mapped_column(nullable=False)
     lat: Mapped[float] = mapped_column(nullable=False)
     lon: Mapped[float] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=True)
@@ -29,9 +27,7 @@ class Recording(Base):
         return (
             f"<Recording id={self.id}, "
             f"file_name='{self.file_name}', "
-            f"recording_datetime={self.recording_datetime}, "
             f"status='{self.status}', "
-            f"duration_sec={self.duration_sec}, "
             f"lat={self.lat}, "
             f"lon={self.lon}, "
             f"created_at={self.created_at}, "
