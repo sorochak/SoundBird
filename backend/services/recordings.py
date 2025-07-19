@@ -1,12 +1,10 @@
 from sqlalchemy.orm import Session
-from app.models.recording import Recording, RecordingStatus
+from backend.app.models.recording import Recording, RecordingStatus
 from datetime import datetime
 
-def create_recording(db: Session, *, file_name: str, recording_datetime: datetime, duration_sec: float, lat: float, lon: float) -> Recording:
+def create_recording(db: Session, *, file_name: str, lat: float, lon: float) -> Recording:
     new_recording = Recording(
         file_name=file_name,
-        recording_datetime=recording_datetime,
-        duration_sec=duration_sec,
         lat=lat,
         lon=lon,
         status=RecordingStatus.PENDING,
