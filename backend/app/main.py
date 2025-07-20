@@ -4,7 +4,6 @@ from birdnetlib.analyzer import Analyzer
 from backend.app.routes.analyze import router as analyze_router
 from backend.app.routes.detections import router as detections_router
 from database.config import Base, engine
-from backend.app.models.detection import Detections
 from contextlib import asynccontextmanager
 import logging
 
