@@ -2,7 +2,6 @@ from fastapi import APIRouter, UploadFile, File, Form, Request, HTTPException
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from pathlib import Path
 import zipfile
-from typing import List
 import logging
 from backend.services.audio_analyzer import analyze_audio_file
 
