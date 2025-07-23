@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
-from backend.app.models import detection as detection_model
 from backend.app.schemas import detection as detection_schema
 from backend.app.crud import detection as crud_detection
 from database.config import get_db
