@@ -11,15 +11,15 @@ from pathlib import Path
 """
 Database Configuration
 
-- Defaults to local SQLite for quick development and testing.
-- Supports automatic switch to PostgreSQL when DATABASE_URL is set in the environment.
+- Connects to the database specified in the DATABASE_URL environment variable.
+- Raises an error if DATABASE_URL is not set.
 
-TODO:
-- Set up PostgreSQL database for production.
-- Update .env file with the real DATABASE_URL once ready.
-
-Example PostgreSQL URL format:
+To use PostgreSQL, set DATABASE_URL in the .env file using this format:
 postgresql+psycopg2://username:password@hostname:port/dbname
+
+Example .env entry:
+DATABASE_URL=postgresql+psycopg2://user:pass@localhost:5432/soundbird
+
 """
 
 
@@ -27,7 +27,7 @@ postgresql+psycopg2://username:password@hostname:port/dbname
 env_path = Path(__file__).resolve().parents[1] / ".env"
 load_dotenv(dotenv_path=env_path)
 
-# Database URL from environment variable, fallback to local SQLite for dev
+# Load DATABASE_URL from environment; required for all environments
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
@@ -37,12 +37,7 @@ if not DATABASE_URL:
     )
 
 # Create the SQLAlchemy engine
-engine = create_engine(
-    DATABASE_URL,
-    connect_args=(
-        {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-    ),
-)
+engine = create_engine(DATABASE_URL)
 
 # Create a configured "Session" class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
