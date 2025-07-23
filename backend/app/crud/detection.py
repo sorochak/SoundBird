@@ -1,27 +1,21 @@
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Literal
 from datetime import datetime
 from backend.app.models.detection import Detections
 from backend.app.schemas.detection import DetectionCreate
 
-
-# Get a single detection from the database by its ID.
-# Returns None if the detection is not found.
-# This function is useful for retrieving a specific detection's details.
-# It can be used in various scenarios, such as displaying detailed information about a detection
-# in a web application or API response.
-# The function takes a SQLAlchemy session and the detection ID as parameters.
-
-
 def get_detection(db: Session, detection_id: int) -> Optional[Detections]:
+    """
+    Retrieve a single detection by its ID.
+
+    Args:
+        db (Session): SQLAlchemy database session.
+        detection_id (int): The ID of the detection to retrieve.
+
+    Returns:
+        Optional[Detections]: The detection object if found, else None.
+    """
     return db.query(Detections).filter(Detections.id == detection_id).first()
-
-
-# This function creates multiple detections in the database.
-# It takes a SQLAlchemy session and a list of DetectionCreate objects as parameters.
-# Each detection comes in as a validated Pydantic model, (DetectionCreate).
-# The function converts each DetectionCreate object into a Detections model instance,
-
 
 def create_detections(
     db: Session,  # SQLAlchemy DB session passed from FastAPI's dependency injection
@@ -29,6 +23,16 @@ def create_detections(
         DetectionCreate
     ],  # List of input objects from the client (validated)
 ) -> List[Detections]:  # Returns the created DB model instances with ID and timestamps
+    """
+    Create multiple detections in the database.
+
+    Args:
+        db (Session): SQLAlchemy database session.
+        detections (List[DetectionCreate]): Validated detection data from client.
+
+    Returns:
+        List[Detections]: List of newly created detection records.
+    """
 
     # Convert each DetectionCreate Pydantic object into a SQLAlchemy Detections model instance
     # d.model_dump() converts the Pydantic model into a plain dictionary of field values.
@@ -58,8 +62,25 @@ def get_detections(
     end_date: Optional[datetime] = None,
     user_id: Optional[int] = None,
     sort_by: Optional[str] = None,
-    sort_order: Optional[str] = "desc",
+    sort_order: Literal["asc", "desc"] = "desc",
 ) -> List[Detections]:
+    """
+    Retrieve detections with optional filters and pagination.
+
+    Args:
+        db (Session): SQLAlchemy database session.
+        skip (int): Number of records to skip (for pagination).
+        limit (int): Maximum number of records to return.
+        species (Optional[str]): Filter by species name.
+        start_date (Optional[datetime]): Filter detections after this date.
+        end_date (Optional[datetime]): Filter detections before this date.
+        user_id (Optional[int]): Filter by user ID.
+        sort_by (Optional[str]): Field to sort by.
+        sort_order (Optional[str]): Sort direction ('asc' or 'desc').
+
+    Returns:
+        List[Detections]: List of filtered and sorted detection records.
+    """
     query = db.query(Detections)
 
     if species:
@@ -78,7 +99,9 @@ def get_detections(
     if sort_by:
         sort_column = getattr(Detections, sort_by, None)
         if sort_column is not None:
-            query = query.order_by(getattr(sort_column, sort_order)())
+            order_func = getattr(sort_column, sort_order, None)
+            if order_func is not None:
+                query = query.order_by(order_func())
 
     return query.offset(skip).limit(limit).all()
 
@@ -86,7 +109,13 @@ def get_detections(
 def delete_detection(db: Session, detection_id: int) -> bool:
     """
     Delete a detection by its ID.
-    Returns True if the detection was deleted, False if not found.
+
+    Args:
+        db (Session): SQLAlchemy database session.
+        detection_id (int): The ID of the detection to delete.
+
+    Returns:
+        bool: True if deleted successfully, False if not found.
     """
     detection = db.query(Detections).filter(Detections.id == detection_id).first()
     if detection is None:
