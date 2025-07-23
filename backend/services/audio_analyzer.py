@@ -3,7 +3,6 @@ from birdnetlib import Recording
 from birdnetlib.analyzer import Analyzer
 from backend.app.models.detection import Detections
 from database.config import SessionLocal
-import os
 import json
 import csv
 import time
