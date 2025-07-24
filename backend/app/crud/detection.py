@@ -91,13 +91,10 @@ def get_detections(
     elif end_date:
         query = query.filter(Detections.detection_time <= end_date)
 
-    if sort_by is not None:
-        if hasattr(Detections, sort_by):
-            sort_column = getattr(Detections, sort_by)
-            if sort_order == "asc":
-                query = query.order_by(sort_column.asc())
-            else:
-                query = query.order_by(sort_column.desc())
+    if sort_by and hasattr(Detections, sort_by):
+        sort_column = getattr(Detections, sort_by)
+        order_func = sort_column.asc if sort_order == "asc" else sort_column.desc
+        query = query.order_by(order_func())
 
     return query.offset(skip).limit(limit).all()
 
