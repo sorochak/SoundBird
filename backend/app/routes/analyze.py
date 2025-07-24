@@ -58,6 +58,9 @@ async def analyze_audio(
             logger.info(f"Found {len(wav_files)} wav files in ZIP archive")
 
             for wav_file in wav_files:
+                if wav_file.name.startswith("._") or wav_file.name.startswith("."):
+                    logger.warning(f"Skipping macOS hidden file: {wav_file.name}")
+                    continue
                 try:
                     results = analyze_audio_file(wav_file, analyzer, lat, lon, db=db)
                     all_detections.extend(results)
