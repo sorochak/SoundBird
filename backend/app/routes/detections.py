@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Literal
 from datetime import datetime
 from backend.app.schemas import detection as detection_schema
 from backend.app.crud import detection as crud_detection
@@ -36,8 +36,8 @@ def get_detections(
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     user_id: Optional[int] = None,
-    sort_by: Optional[str] = Query(None, enum=["detection_time", "confidence"]),
-    sort_order: Optional[str] = Query("desc", enum=["asc", "desc"]),
+    sort_by: Optional[Literal["detection_time", "confidence"]] = Query(None),
+    sort_order: Literal["asc", "desc"] = Query("desc"),
 ):
     """
     Retrieve a list of detections with optional filters and sorting.
