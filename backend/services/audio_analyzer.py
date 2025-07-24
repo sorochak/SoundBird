@@ -1,17 +1,25 @@
 # audio_analyzer.py
+import csv
+import json
+import logging
+import re
+import time
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from tqdm import tqdm
+
 from birdnetlib import Recording
 from birdnetlib.analyzer import Analyzer
-from backend.app.models.detection import Detections
+
 from database.config import SessionLocal
-import json
-import csv
-import time
-from pathlib import Path
-from typing import List, Dict, Any
-from datetime import datetime, timedelta
-from tqdm import tqdm
-import re
-import logging
+
+from sqlalchemy.orm import Session
+
+from backend.app.crud.detection import create_detections
+from backend.app.models.detection import Detections
+from backend.app.schemas.detection import DetectionCreate
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +63,8 @@ def analyze_audio_file(
     file_path: Path,
     analyzer: Analyzer,
     lat: float,
-    lon: float
+    lon: float,
+    db: Optional[Session] = None
 ) -> List[Dict[str, Any]]:
     """
     Analyze a single .WAV file using BirdNETlib and return a list of detection results.
@@ -116,16 +125,21 @@ def analyze_audio_file(
             
         # save detections from this file to the database
         if results:
-            db = SessionLocal()
+            internal_db = False
+            if db is None:
+                db = SessionLocal()
+                internal_db = True
+
             try:
-                db.add_all([Detections(**d) for d in results])
-                db.commit()
+                detection_objects = [DetectionCreate(**r) for r in results]
+                create_detections(db, detection_objects)
                 logger.info(f"Inserted {len(results)} detections into DB for {file_path.name}")
             except Exception as e:
                 db.rollback()
                 logger.error(f"Failed to insert detections into DB for {file_path.name}: {e}")
             finally:
-                db.close()
+                if internal_db:
+                    db.close()
     return results
 
 def analyze_audio_directory(
