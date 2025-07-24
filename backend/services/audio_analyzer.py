@@ -36,7 +36,7 @@ def get_recording_datetime(filename:str) -> datetime:
     date_str, time_str = match.groups()
     return datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H%M%S")
 
-def calculate_detected_at(filename: str, start_sec: float) -> datetime:
+def calculate_detection_time(filename: str, start_sec: float) -> datetime:
     """
     Calculates the actual time a detection occurred, based on the file name and start seconds.
 
@@ -91,7 +91,7 @@ def analyze_audio_file(
             start_sec = det.get("start_time", None)
             recording_datetime = get_recording_datetime(file_path.name)
             detection_time = (
-                calculate_detected_at(file_path.name, start_sec)
+                calculate_detection_time(file_path.name, start_sec)
                 if start_sec is not None else None
             )
 
