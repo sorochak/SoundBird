@@ -14,7 +14,7 @@ from birdnetlib.analyzer import Analyzer
 def test_calculate_detected_at_valid():
     filename = "20231001_123456.WAV"
     start_sec = 10.0
-    expected_result = "2023-10-01T12:35:06" 
+    expected_result = datetime(2023, 10, 1, 12, 35, 6)
     result = calculate_detected_at(filename, start_sec)
     assert result == expected_result
 
@@ -25,7 +25,7 @@ def test_calculate_detected_at_invalid_filename():
 def test_calculate_detected_at_zero_seconds():
     filename = "20231001_123456.WAV"
     start_sec = 0.0
-    expected_result = "2023-10-01T12:34:56"  # Exact time from filename
+    expected_result = datetime(2023, 10, 1, 12, 34, 56)
     result = calculate_detected_at(filename, start_sec)
     assert result == expected_result
 
@@ -54,4 +54,4 @@ def test_analyze_audio_file_mocked(mock_recording_class):
     assert len(results) == 1
     assert results[0]["species"] == "Raven"
     assert results[0]["confidence"] == 0.85
-    assert results[0]["detected_at"] == "2023-10-01T12:35:08"
+    assert results[0]["detection_time"] == "2023-10-01T12:35:08.300000"
