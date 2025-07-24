@@ -60,7 +60,6 @@ def get_detections(
     species: Optional[str] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
-    user_id: Optional[int] = None,
     sort_by: Optional[str] = None,
     sort_order: Literal["asc", "desc"] = "desc",
 ) -> List[Detections]:
@@ -74,7 +73,6 @@ def get_detections(
         species (Optional[str]): Filter by species name.
         start_date (Optional[datetime]): Filter detections after this date.
         end_date (Optional[datetime]): Filter detections before this date.
-        user_id (Optional[int]): Filter by user ID.
         sort_by (Optional[str]): Field to sort by.
         sort_order (Optional[str]): Sort direction ('asc' or 'desc').
 
@@ -86,9 +84,6 @@ def get_detections(
     if species:
         query = query.filter(Detections.species.ilike(f"%{species}%"))
 
-    if user_id:
-        query = query.filter(Detections.user_id == user_id)
-
     if start_date and end_date:
         query = query.filter(Detections.detection_time.between(start_date, end_date))
     elif start_date:
@@ -96,9 +91,9 @@ def get_detections(
     elif end_date:
         query = query.filter(Detections.detection_time <= end_date)
 
-    if sort_by:
-        sort_column = getattr(Detections, sort_by, None)
-        if sort_column is not None:
+    if sort_by is not None:
+        if hasattr(Detections, sort_by):
+            sort_column = getattr(Detections, sort_by)
             if sort_order == "asc":
                 query = query.order_by(sort_column.asc())
             else:

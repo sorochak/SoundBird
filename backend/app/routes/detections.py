@@ -35,7 +35,6 @@ def get_detections(
     species: Optional[str] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
-    user_id: Optional[int] = None,
     sort_by: Optional[Literal["detection_time", "confidence"]] = Query(None),
     sort_order: Literal["asc", "desc"] = Query("desc"),
 ):
@@ -44,7 +43,6 @@ def get_detections(
 
     - species: partial match, case-insensitive
     - start_date / end_date: filter by detection_time
-    - user_id: filter by user
     - sort_by: 'detection_time' or 'confidence'
     - sort_order: 'asc' or 'desc'
     """
@@ -55,7 +53,6 @@ def get_detections(
         species=species,
         start_date=start_date,
         end_date=end_date,
-        user_id=user_id,
         sort_by=sort_by,
         sort_order=sort_order,
     )
