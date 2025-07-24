@@ -9,6 +9,7 @@ def test_db_connection():
     """
     Test the database connection by creating a session and checking if it can be used.
     """
+    db = None  # Prevent 'possibly unbound' warning from Pylance
     try:
         # Create a new session
         db = SessionLocal()
@@ -18,5 +19,6 @@ def test_db_connection():
     except Exception as e:
         print(f"[ERROR] Database connection test failed: {e}")
     finally:
-        # Close the session
-        db.close()
+        # Close the session if it was created
+        if db:
+            db.close()
