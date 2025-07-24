@@ -1,9 +1,13 @@
-from fastapi import APIRouter, UploadFile, File, Form, Request, HTTPException
-from tempfile import NamedTemporaryFile, TemporaryDirectory
-from pathlib import Path
-import zipfile
 import logging
+import zipfile
+from pathlib import Path
+from tempfile import NamedTemporaryFile, TemporaryDirectory
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from sqlalchemy.orm import Session
+
 from backend.services.audio_analyzer import analyze_audio_file
+from database.config import get_db
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -15,6 +19,7 @@ async def analyze_audio(
     file: UploadFile = File(...),
     lat: float = Form(...),
     lon: float = Form(...),
+    db: Session = Depends(get_db)
 ):
     analyzer = request.app.state.analyzer
     if not file.filename:
@@ -32,7 +37,7 @@ async def analyze_audio(
             tmp_path_with_name = tmp_path.with_name(original_filename)
             tmp_path.rename(tmp_path_with_name)
             logger.info(f"Analyzing uploaded file: {original_filename}")
-            detections = analyze_audio_file(tmp_path_with_name, analyzer, lat, lon)
+            detections = analyze_audio_file(tmp_path_with_name, analyzer, lat, lon, db=db)
             return {"detections": detections}
 
     elif filename.endswith(".zip"):
@@ -53,8 +58,11 @@ async def analyze_audio(
             logger.info(f"Found {len(wav_files)} wav files in ZIP archive")
 
             for wav_file in wav_files:
+                if wav_file.name.startswith("._") or wav_file.name.startswith("."):
+                    logger.warning(f"Skipping macOS hidden file: {wav_file.name}")
+                    continue
                 try:
-                    results = analyze_audio_file(wav_file, analyzer, lat, lon)
+                    results = analyze_audio_file(wav_file, analyzer, lat, lon, db=db)
                     all_detections.extend(results)
                 except Exception as e:
                     logger.warning(f"Skipping {wav_file.name}: {e}")
