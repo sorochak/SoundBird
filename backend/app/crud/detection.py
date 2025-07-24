@@ -99,9 +99,10 @@ def get_detections(
     if sort_by:
         sort_column = getattr(Detections, sort_by, None)
         if sort_column is not None:
-            order_func = getattr(sort_column, sort_order, None)
-            if order_func is not None:
-                query = query.order_by(order_func())
+            if sort_order == "asc":
+                query = query.order_by(sort_column.asc())
+            else:
+                query = query.order_by(sort_column.desc())
 
     return query.offset(skip).limit(limit).all()
 
