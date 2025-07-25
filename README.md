@@ -25,6 +25,138 @@ SoundBird is currently under active development. It will allow users to:
 
 ---
 
+## Tech Stack and Justification
+
+| Technology         | Purpose                     | Why It’s Used                                                         |
+| ------------------ | --------------------------- | --------------------------------------------------------------------- |
+| **FastAPI**        | Web framework               | Lightweight, async-ready, and ideal for API-centric applications      |
+| **SQLAlchemy**     | ORM for database access     | Clean and declarative way to model data using Python classes          |
+| **Alembic**        | Database migrations         | Enables version-controlled schema changes                             |
+| **PostgreSQL**     | Relational database         | Reliable, scalable, and feature-rich SQL database for structured data |
+| **Docker Compose** | Dev environment management  | Simplifies provisioning of PostgreSQL in local development            |
+| **BirdNETlib**     | ML model for bird detection | Provides local, pre-trained species detection from `.wav` files       |
+| **OpenAI API**     | Image generation            | Generates species thumbnails using natural language prompts           |
+| **Pydantic**       | Data validation             | Validates and serializes request and response data in FastAPI         |
+| **TQDM**           | CLI progress visualization  | Visualizes batch analysis progress during long-running scripts        |
+| **python-dotenv**  | Env variable loading        | Keeps secrets and config out of source code, loaded from `.env` file  |
+
+---
+
+## Data Model
+
+### Current Schema: `detections` Table
+
+| Column               | Type     | Description                                  |
+| -------------------- | -------- | -------------------------------------------- |
+| `id`                 | Integer  | Primary key                                  |
+| `file_name`          | String   | Name of the analyzed file                    |
+| `recording_datetime` | DateTime | Start time of the recording                  |
+| `detection_time`     | DateTime | Timestamp of detected call                   |
+| `species`            | String   | Common species name                          |
+| `scientific_name`    | String   | Scientific name of the species               |
+| `confidence`         | Float    | Confidence score from the model              |
+| `start_sec`          | Float    | Detection start time (relative to recording) |
+| `end_sec`            | Float    | Detection end time                           |
+| `lat`                | Float    | Latitude of the recording location           |
+| `lon`                | Float    | Longitude of the recording location          |
+| `created_at`         | DateTime | Timestamp when row was inserted              |
+| `image_path`         | String   | Optional path to species thumbnail           |
+| `sonogram_path`      | String   | Optional path to generated sonogram          |
+| `snippet_path`       | String   | Optional path to audio snippet               |
+
+---
+
+### Planned Schema: Normalized with `recordings` Table
+
+#### Table: `recordings` (new)
+
+| Column          | Type     | Description                                      |
+| --------------- | -------- | ------------------------------------------------ |
+| `id`            | Integer  | Primary key                                      |
+| `file_name`     | String   | Name of the uploaded audio file                  |
+| `status`        | Enum     | Processing status (`pending`, `completed`, etc.) |
+| `lat`           | Float    | Latitude of recording                            |
+| `lon`           | Float    | Longitude of recording                           |
+| `created_at`    | DateTime | Time recording was uploaded                      |
+| `completed_at`  | DateTime | Time analysis finished                           |
+| `error_message` | String   | Optional error message if processing failed      |
+
+#### Table: `detections` (updated)
+
+| Column               | Type     | Description                                  |
+| -------------------- | -------- | -------------------------------------------- |
+| `id`                 | Integer  | Primary key                                  |
+| `recording_id`       | Integer  | Foreign key referencing `recordings.id`      |
+| `recording_datetime` | DateTime | Start time of the recording                  |
+| `detection_time`     | DateTime | Timestamp of detected call                   |
+| `species`            | String   | Common species name                          |
+| `scientific_name`    | String   | Scientific name of the species               |
+| `confidence`         | Float    | Confidence score from the model              |
+| `start_sec`          | Float    | Detection start time (relative to recording) |
+| `end_sec`            | Float    | Detection end time                           |
+| `image_path`         | String   | Optional path to species thumbnail           |
+| `sonogram_path`      | String   | Optional path to generated sonogram          |
+| `snippet_path`       | String   | Optional path to audio snippet               |
+| `created_at`         | DateTime | Timestamp when row was inserted              |
+
+---
+
+## High-Level Data Flow
+
+[User Uploads .wav or .zip File]
+└──> POST /analyze
+↳ File: routes/analyze.py
+↳ Function: analyze_audio()
+
+          ↓
+
+[File temporarily saved to disk]
+└──> File: routes/analyze.py
+↳ Logic: NamedTemporaryFile / TemporaryDirectory
+
+          ↓
+
+[BirdNET analysis runs]
+└──> File: services/audio_analyzer.py
+↳ Function: analyze_audio_file()
+
+          ↓
+
+[Detections parsed and enriched]
+└──> File: services/audio_analyzer.py
+↳ Loop: for det in recording.detections
+↳ Helpers: calculate_detection_time(), get_recording_datetime()
+
+          ↓
+
+[Detections saved to database]
+└──> File: crud/detection.py
+↳ Function: create_detections()
+File: models/detection.py
+↳ Class: Detections (SQLAlchemy model)
+
+          ↓
+
+[Planned: Recording metadata also saved]
+└──> File: models/recording.py (planned)
+↳ Class: Recording
+File: schemas/recording.py (planned)
+↳ Used for linking detections to a single recording
+
+          ↓
+
+[Optional: Thumbnail and Wikipedia enrichment]
+└──> File: services/image_generator.py
+↳ Function: generate_species_thumbnail()
+File: services/wiki_utils.py
+↳ Function: fetch_wikipedia_description()
+
+          ↓
+
+[Client fetches detection results]
+└──> File: routes/detections.py (planned)
+↳ Endpoint: GET /detections or /recordings/{id}/detections
+
 ## System Architecture Overview
 
 SoundBird is currently under active development.  
