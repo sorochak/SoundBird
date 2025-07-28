@@ -101,6 +101,105 @@ SoundBird is currently under active development. It will allow users to:
 
 ---
 
+## High-Level System Data Flow
+
+1. User submits a `.wav` or `.zip` file via the `POST /analyze` route.
+2. `routes/analyze.py` receives the file and passes it to `analyze_audio_file()` in `services/audio_analyzer.py`.
+3. `services/audio_analyzer.py` uses BirdNET to analyze audio, enriches detections, and calls the `DetectionRepository` to persist results.
+4. `repositories/detection.py` handles database access and inserts detection records via SQLAlchemy ORM.
+5. `models/detection.py` defines the DB schema (tables and columns).
+6. `schemas/detection.py` defines Pydantic schemas for validation and serialization.
+7. User can fetch stored detections through `GET /detections` and related CRUD endpoints in `routes/detections.py`.
+
+---
+
+## Module Descriptions
+
+### `main.py`
+
+**Purpose**: Main FastAPI entry point.
+
+**Responsibilities**:
+
+- Instantiates the FastAPI app
+- Sets up health check and middleware
+- Includes route routers (`/analyze`, `/detections`)
+- Optionally sets up shared app state (e.g., BirdNET Analyzer instance)
+
+---
+
+### `routes/detections.py`
+
+**Purpose**: Exposes CRUD endpoints for detection records.
+
+**Responsibilities**:
+
+- Define RESTful endpoints: `GET /detections`, `GET /detections/{id}`, `DELETE /detections/{id}`
+- Delegate business logic to `DetectionRepository`
+- Serialize responses using Pydantic schemas
+
+---
+
+### `routes/analyze.py`
+
+**Purpose**: Handles audio upload and analysis.
+
+**Responsibilities**:
+
+- Accept `.wav` or `.zip` uploads via `POST /analyze`
+- Extract metadata (lat/lon)
+- Call `analyze_audio_file()` in `services/audio_analyzer.py`
+- Return success or error response
+
+---
+
+### `schemas/detection.py`
+
+**Purpose**: Defines request and response shapes using Pydantic.
+
+**Responsibilities**:
+
+- `DetectionCreate`: incoming payload for new detections
+- `Detection`: response model (matches DB schema + ID)
+- Enables type-checking, validation, and Swagger docs
+
+---
+
+### `models/detection.py`
+
+**Purpose**: SQLAlchemy model for the `detections` table.
+
+**Responsibilities**:
+
+- Define database schema (columns, types, constraints)
+- Maps to a table in PostgreSQL
+- Used by repository layer for ORM operations
+
+---
+
+### `repositories/detection.py`
+
+**Purpose**: Implements database access using the Repository pattern.
+
+**Responsibilities**:
+
+- `save_detections()`: bulk insert detection records
+- `get_detection()`, `get_detections()`, `delete_detection()`
+- Keeps DB logic decoupled from route and service layers
+
+---
+
+### `services/audio_analyzer.py`
+
+**Purpose**: Orchestrates audio analysis using BirdNET and handles detection parsing.
+
+**Responsibilities**:
+
+- Accept a `.wav` file or directory of files
+- Use BirdNETlib to extract detection data
+- Parse and enrich metadata (datetime, lat/lon, filename)
+- Delegate persistence to `DetectionRepository`
+
 ## System Architecture Overview
 
 SoundBird is currently under active development.  
@@ -180,6 +279,28 @@ This was primarily used to test thumbnail generation. It will be integrated into
 python backend/services/generate_thumbnail.py "Savannah Sparrow"
 ```
 
+## Testing
+
+SoundBird includes unit tests to verify core functionality, especially around database interactions and audio analysis logic.
+
+### Test Structure
+
+Tests are located in the `backend/tests/` directory and follow the structure of the main application:
+
+- `tests/repositories/test_detection_repository.py`: Tests for detection repository methods like `save_detections`, `get_detection`, and `delete_detection`.
+- Future tests may cover:
+  - Input validation for `DetectionCreate`
+  - Error handling in audio analysis
+  - API route behavior using FastAPI’s `TestClient`
+
+### Running Tests
+
+To run all tests using `pytest`:
+
+```bash
+cd backend
+pytest -v
+
 ## Requirements
 
 - Python 3.10 or 3.11
@@ -190,22 +311,22 @@ python backend/services/generate_thumbnail.py "Savannah Sparrow"
 
 **SoundBird** is under active development, with the following planned enhancements:
 
-- **Biodiversity Comparison Tools**  
+- **Biodiversity Comparison Tools**
   Analyze and compare bird biodiversity levels between different habitats (e.g., old-growth forests vs second-growth) by overlaying spatial data such as GeoJSON habitat boundaries with recording locations.
 
-- **Conservation Alerts**  
+- **Conservation Alerts**
   Implement an alert system to flag the detection of endangered or species-at-risk in uploaded recordings, based on conservation status databases.
 
-- **Historical and Seasonal Trends**  
+- **Historical and Seasonal Trends**
   Expand functionality to track changes in species presence over time (e.g., year-over-year or seasonal migration patterns).
 
-- **Enhanced Frontend Visualization**  
+- **Enhanced Frontend Visualization**
   Integrate map-based exploration, detection timelines, habitat overlays, and rich species profiles, making biodiversity data more intuitive and accessible.
 
-- **Scalable Cloud Processing**  
+- **Scalable Cloud Processing**
   Expand infrastructure to handle large recording datasets and support collaborative research projects.
 
-- **Community Sharing and Storytelling**  
+- **Community Sharing and Storytelling**
   Allow users to share notable detections, species highlights, and field reports directly through the platform.
 
 ## About the Developer
@@ -226,3 +347,4 @@ We gratefully acknowledge the BirdNET project's contributions to bioacoustic res
 ## License
 
 This project is licensed under the MIT License.
+```
