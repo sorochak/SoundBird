@@ -7,7 +7,7 @@ from backend.app.crud import detection as crud_detection
 from database.config import get_db
 
 
-router = APIRouter()
+router = APIRouter(tags=["detections"])
 
 
 @router.get("/detections/{detection_id}", response_model=detection_schema.Detection)

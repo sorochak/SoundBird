@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from backend.services.audio_analyzer import analyze_audio_file
 from database.config import get_db
 
-router = APIRouter()
+router = APIRouter(tags=["analyze"])
 logger = logging.getLogger(__name__)
 
 
