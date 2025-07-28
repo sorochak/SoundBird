@@ -44,6 +44,7 @@ class DetectionRepository:
     return self.db.query(Detections).filter(Detections.id == detection_id).first()
   
   def get_detections(
+    self,
     skip: int = 0,
     limit: int = 100,
     species: Optional[str] = None,
