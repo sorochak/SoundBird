@@ -25,11 +25,15 @@ class DetectionRepository:
         List of newly created Detections with populated ID and timestamps.
     """
     db_detections = [Detections(**d.model_dump()) for d in detections]
-    self.db.add_all(db_detections)
-    self.db.commit()
-    for det in db_detections:
-      self.db.refresh(det)
-    return db_detections
+    try:
+        self.db.add_all(db_detections)
+        self.db.commit()
+        for det in db_detections:
+            self.db.refresh(det)
+        return db_detections
+    except Exception:
+        self.db.rollback()
+        raise
   
   def get_detection(self, detection_id: int) -> Optional[Detections]:
     """
