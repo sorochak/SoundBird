@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional, Literal
 from datetime import datetime
 from backend.app.schemas import detection as detection_schema
-from backend.app.crud import detection as crud_detection
+from backend.app.repositories.detection import DetectionRepository
 from database.config import get_db
 
 
@@ -14,14 +14,9 @@ router = APIRouter(tags=["detections"])
 def get_detection(detection_id: int, db: Session = Depends(get_db)):
     """
     Retrieve a single detection by its unique ID.
-
-    - **detection_id**: Required. The primary key of the detection record.
-
-    Returns:
-    - 200: Detection found and returned.
-    - 404: Detection not found.
     """
-    detection = crud_detection.get_detection(db, detection_id)
+    repo = DetectionRepository(db)
+    detection = repo.get_detection(detection_id)
     if not detection:
         raise HTTPException(status_code=404, detail="Detection not found")
     return detection
@@ -40,14 +35,9 @@ def get_detections(
 ):
     """
     Retrieve a list of detections with optional filters and sorting.
-
-    - species: partial match, case-insensitive
-    - start_date / end_date: filter by detection_time
-    - sort_by: 'detection_time' or 'confidence'
-    - sort_order: 'asc' or 'desc'
     """
-    return crud_detection.get_detections(
-        db=db,
+    repo = DetectionRepository(db)
+    return repo.get_detections(
         skip=skip,
         limit=limit,
         species=species,
@@ -70,7 +60,8 @@ def create_detections(
     Accepts a list of validated DetectionCreate objects and inserts them.
     Returns the inserted detections with their generated ID and created_at fields.
     """
-    return crud_detection.create_detections(db, detections)
+    repo = DetectionRepository(db)
+    return repo.save_detections(detections)
 
 
 @router.delete("/detections/{detection_id}", status_code=204)
@@ -79,7 +70,8 @@ def delete_detection(detection_id: int, db: Session = Depends(get_db)):
     Delete a detection by its ID.
     Returns 204 if deleted, 404 if not found.
     """
-    deleted = crud_detection.delete_detection(db, detection_id)
+    repo = DetectionRepository(db)
+    deleted = repo.delete_detection(detection_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Detection not found")
     return

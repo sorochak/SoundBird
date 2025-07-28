@@ -17,7 +17,7 @@ from database.config import SessionLocal
 
 from sqlalchemy.orm import Session
 
-from backend.app.crud.detection import create_detections
+from backend.app.repositories.detection import DetectionRepository
 from backend.app.models.detection import Detections
 from backend.app.schemas.detection import DetectionCreate
 
@@ -121,25 +121,21 @@ def analyze_audio_file(
             }
             results.append(result)
         except Exception as e:
-            logger.exception(f"Error saving detection for {file_path.name}")
+            logger.exception(f"Error parsing detection in {file_path.name}")
             
         # save detections from this file to the database
         if results:
-            internal_db = False
             if db is None:
-                db = SessionLocal()
-                internal_db = True
+                raise ValueError("Database session is required to save detections")
 
             try:
                 detection_objects = [DetectionCreate(**r) for r in results]
-                create_detections(db, detection_objects)
+                repo = DetectionRepository(db)
+                repo.save_detections(detection_objects)
                 logger.info(f"Inserted {len(results)} detections into DB for {file_path.name}")
             except Exception as e:
-                db.rollback()
                 logger.error(f"Failed to insert detections into DB for {file_path.name}: {e}")
-            finally:
-                if internal_db:
-                    db.close()
+                
     return results
 
 def analyze_audio_directory(
