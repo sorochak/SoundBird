@@ -9,7 +9,7 @@ from sqlalchemy.sql import func
 from database.config import Base
 
 
-class Detections(Base):
+class Detection(Base):
     __tablename__ = "detections"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
