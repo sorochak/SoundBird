@@ -10,15 +10,12 @@ from typing import Any, Dict, List, Optional
 
 from tqdm import tqdm
 
-from birdnetlib import Recording
+from birdnetlib import Recording as BirdNETRecording
 from birdnetlib.analyzer import Analyzer
-
-from database.config import SessionLocal
 
 from sqlalchemy.orm import Session
 
 from backend.app.repositories.detection import DetectionRepository
-from backend.app.models.detection import Detections
 from backend.app.schemas.detection import DetectionCreate
 
 logger = logging.getLogger(__name__)
@@ -83,7 +80,7 @@ def analyze_audio_file(
     date_part = filename.split("_")[0]
     recording_date = datetime.strptime(date_part, "%Y%m%d")
 
-    recording = Recording(
+    recording = BirdNETRecording(
         analyzer,
         str(file_path),
         lat=lat,
