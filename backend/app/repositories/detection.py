@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional, Literal
 from datetime import datetime
 
-from backend.app.models.detection import Detections
+from backend.app.models.detection import Detection
 from backend.app.schemas.detection import DetectionCreate
 
 class DetectionRepository:
@@ -14,7 +14,7 @@ class DetectionRepository:
     """
     self.db = db
     
-  def save_detections(self, detections: List[DetectionCreate]) -> List[Detections]:
+  def save_detections(self, detections: List[DetectionCreate]) -> List[Detection]:
     """
     Save multiple detection records to the database.
 
@@ -24,7 +24,7 @@ class DetectionRepository:
     Returns:
         List of newly created Detections with populated ID and timestamps.
     """
-    db_detections = [Detections(**d.model_dump()) for d in detections]
+    db_detections = [Detection(**d.model_dump()) for d in detections]
     try:
         self.db.add_all(db_detections)
         self.db.commit()
@@ -35,7 +35,7 @@ class DetectionRepository:
         self.db.rollback()
         raise
   
-  def get_detection(self, detection_id: int) -> Optional[Detections]:
+  def get_detection(self, detection_id: int) -> Optional[Detection]:
     """
     Retrieve a single detection by its ID.
 
@@ -45,7 +45,7 @@ class DetectionRepository:
     Returns:
         The Detection object if found, otherwise None.
     """
-    return self.db.query(Detections).filter(Detections.id == detection_id).first()
+    return self.db.query(Detection).filter(Detection.id == detection_id).first()
   
   def get_detections(
     self,
@@ -56,7 +56,7 @@ class DetectionRepository:
     end_date: Optional[datetime] = None,
     sort_by: Optional[str] = None,
     sort_order: Literal["asc", "desc"] = "desc",
-  ) -> List[Detections]:
+  ) -> List[Detection]:
     """
     Retrieve multiple detections with optional filters and sorting.
 
@@ -72,18 +72,18 @@ class DetectionRepository:
     Returns:
         A list of matching Detections.
     """
-    query = self.db.query(Detections)
+    query = self.db.query(Detection)
     
     if species:
-        query = query.filter(Detections.species.ilike(f"%{species}%"))
+        query = query.filter(Detection.species.ilike(f"%{species}%"))
     if start_date and end_date:
-        query = query.filter(Detections.detection_time.between(start_date, end_date))
+        query = query.filter(Detection.detection_time.between(start_date, end_date))
     elif start_date:
-        query = query.filter(Detections.detection_time >= start_date)
+        query = query.filter(Detection.detection_time >= start_date)
     elif end_date:
-        query = query.filter(Detections.detection_time <= end_date)
-    if sort_by and hasattr(Detections, sort_by):
-        sort_column = getattr(Detections, sort_by)
+        query = query.filter(Detection.detection_time <= end_date)
+    if sort_by and hasattr(Detection, sort_by):
+        sort_column = getattr(Detection, sort_by)
         order_func = sort_column.asc if sort_order == "asc" else sort_column.desc
         query = query.order_by(order_func())
 
@@ -99,7 +99,7 @@ class DetectionRepository:
     Returns:
         True if the detection was deleted, False if not found.
     """
-    detection = self.db.query(Detections).filter(Detections.id == detection_id).first()
+    detection = self.db.query(Detection).filter(Detection.id == detection_id).first()
     if detection is None:
       return False
     self.db.delete(detection)
