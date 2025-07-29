@@ -24,8 +24,14 @@ class Recording(Base):
     completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
     error_message: Mapped[str | None] = mapped_column(nullable=True)
     
-    # Relationship
-    detections = relationship("Detections", back_populates="recording", cascade="all, delete-orphan")
+    # One-to-many relationship: a recording can have many detections
+    # Allows access to child Detections via recording.detections
+    # Cascade ensures detections are deleted if the parent recording is deleted
+    detections = relationship(
+        "Detections",                  # Related model (the child)
+        back_populates="recording",    # Must match the field name in Detections
+        cascade="all, delete-orphan"   # Important for cleanup
+    )
 
     def __repr__(self):
         return (

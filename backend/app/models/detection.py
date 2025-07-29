@@ -27,8 +27,12 @@ class Detections(Base):
     sonogram_path: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     snippet_path: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
-    # Relationship
-    recording = relationship("Recording", back_populates="detections")
+    # Many-to-one relationship: each detection is linked to one recording
+    # Allows access to the parent Recording object via detection.recording
+    recording = relationship(
+        "Recording",                # Related model (the parent)
+        back_populates="detections" # Must match field in Recording
+    )
 
     def __repr__(self) -> str:
         return (
