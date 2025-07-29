@@ -35,7 +35,6 @@ def test_save_detections_creates_entry(db_session):
         confidence=0.9,
         lat=48.0,
         lon=-123.0,
-        image_path=None,
         sonogram_path=None,
         snippet_path=None,
     )
@@ -60,7 +59,6 @@ def test_save_detections_invalid_input_raises_error(db_session):
             confidence=0.5,
             lat=0.0,
             lon=0.0,
-            image_path=None,
             sonogram_path=None,
             snippet_path=None,
         )
@@ -83,7 +81,6 @@ def test_get_detection_returns_correct_entry(db_session):
         confidence=0.9,
         lat=48.0,
         lon=-123.0,
-        image_path=None,
         sonogram_path=None,
         snippet_path=None,
     )
@@ -119,7 +116,6 @@ def test_get_detections_with_species_filter(db_session):
         confidence=0.8,
         lat=45.0,
         lon=-75.0,
-        image_path=None,
         sonogram_path=None,
         snippet_path=None,
     )
@@ -141,7 +137,6 @@ def test_delete_detection_success(db_session):
         confidence=0.7,
         lat=40.0,
         lon=-80.0,
-        image_path=None,
         sonogram_path=None,
         snippet_path=None,
     )
