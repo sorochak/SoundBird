@@ -1,18 +1,25 @@
 # audio_analyzer.py
+import csv
+import json
+import logging
+import re
+import time
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from tqdm import tqdm
+
 from birdnetlib import Recording
 from birdnetlib.analyzer import Analyzer
-from backend.app.models.detection import Detections
+
 from database.config import SessionLocal
-import os
-import json
-import csv
-import time
-from pathlib import Path
-from typing import List, Dict, Any
-from datetime import datetime, timedelta
-from tqdm import tqdm
-import re
-import logging
+
+from sqlalchemy.orm import Session
+
+from backend.app.repositories.detection import DetectionRepository
+from backend.app.models.detection import Detections
+from backend.app.schemas.detection import DetectionCreate
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +44,7 @@ def get_recording_datetime(filename:str) -> datetime:
     date_str, time_str = match.groups()
     return datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H%M%S")
 
-def calculate_detected_at(filename: str, start_sec: float) -> datetime:
+def calculate_detection_time(filename: str, start_sec: float) -> datetime:
     """
     Calculates the actual time a detection occurred, based on the file name and start seconds.
 
@@ -56,7 +63,8 @@ def analyze_audio_file(
     file_path: Path,
     analyzer: Analyzer,
     lat: float,
-    lon: float
+    lon: float,
+    db: Optional[Session] = None
 ) -> List[Dict[str, Any]]:
     """
     Analyze a single .WAV file using BirdNETlib and return a list of detection results.
@@ -92,7 +100,7 @@ def analyze_audio_file(
             start_sec = det.get("start_time", None)
             recording_datetime = get_recording_datetime(file_path.name)
             detection_time = (
-                calculate_detected_at(file_path.name, start_sec)
+                calculate_detection_time(file_path.name, start_sec)
                 if start_sec is not None else None
             )
 
@@ -113,20 +121,21 @@ def analyze_audio_file(
             }
             results.append(result)
         except Exception as e:
-            logger.exception(f"Error saving detection for {file_path.name}")
+            logger.exception(f"Error parsing detection in {file_path.name}")
             
         # save detections from this file to the database
         if results:
-            db = SessionLocal()
+            if db is None:
+                raise ValueError("Database session is required to save detections")
+
             try:
-                db.add_all([Detections(**d) for d in results])
-                db.commit()
+                detection_objects = [DetectionCreate(**r) for r in results]
+                repo = DetectionRepository(db)
+                repo.save_detections(detection_objects)
                 logger.info(f"Inserted {len(results)} detections into DB for {file_path.name}")
             except Exception as e:
-                db.rollback()
                 logger.error(f"Failed to insert detections into DB for {file_path.name}: {e}")
-            finally:
-                db.close()
+                
     return results
 
 def analyze_audio_directory(

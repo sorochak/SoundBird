@@ -13,6 +13,8 @@ from birdnetlib.analyzer import Analyzer
 from database.config import DATABASE_URL
 from backend.app.routes.analyze import router as analyze_router
 from backend.app.routes.detections import router as detections_router
+from contextlib import asynccontextmanager
+import logging
 
 # Debug print for DATABASE_URL environment
 print("FASTAPI ENV: ", os.getenv("DATABASE_URL"))
@@ -23,16 +25,14 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 
-# Use FastAPI lifespan event handler to manage startup/shutdown
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: create and store the shared BirdNET analyzer instance
+    logging.info("Loading BirdNET analyzer...")
     app.state.analyzer = Analyzer()
-
     yield
-    # Shutdown logic (e.g., closing DB pools or background workers)
+    logging.info("Shutting down...")
 
-# Initialize FastAPI app with lifespan handler
+# Initialize FastAPI app with lifespan
 app = FastAPI(lifespan=lifespan)
 
 # Root endpoint
