@@ -1,1 +1,2 @@
-from .detection import Detections
+from .detection import Detection
+from .recording import Recording

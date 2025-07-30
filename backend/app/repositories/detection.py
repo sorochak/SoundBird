@@ -4,8 +4,9 @@ from sqlalchemy.orm import Session
 from typing import List, Optional, Literal
 from datetime import datetime
 
-from backend.app.models.detection import Detections
-from backend.app.schemas.detection import DetectionCreate
+from backend.app.models.detection import Detection
+from backend.app.schemas.detection import DetectionCreate, DetectionResponse
+from backend.app.models.recording import Recording
 
 class DetectionRepository:
   def __init__(self, db: Session):
@@ -14,7 +15,7 @@ class DetectionRepository:
     """
     self.db = db
     
-  def save_detections(self, detections: List[DetectionCreate]) -> List[Detections]:
+  def save_detections(self, detections: List[DetectionCreate]) -> List[Detection]:
     """
     Save multiple detection records to the database.
 
@@ -24,7 +25,7 @@ class DetectionRepository:
     Returns:
         List of newly created Detections with populated ID and timestamps.
     """
-    db_detections = [Detections(**d.model_dump()) for d in detections]
+    db_detections = [Detection(**d.model_dump()) for d in detections]
     try:
         self.db.add_all(db_detections)
         self.db.commit()
@@ -35,7 +36,7 @@ class DetectionRepository:
         self.db.rollback()
         raise
   
-  def get_detection(self, detection_id: int) -> Optional[Detections]:
+  def get_detection(self, detection_id: int) -> Optional[Detection]:
     """
     Retrieve a single detection by its ID.
 
@@ -45,7 +46,7 @@ class DetectionRepository:
     Returns:
         The Detection object if found, otherwise None.
     """
-    return self.db.query(Detections).filter(Detections.id == detection_id).first()
+    return self.db.query(Detection).filter(Detection.id == detection_id).first()
   
   def get_detections(
     self,
@@ -56,38 +57,42 @@ class DetectionRepository:
     end_date: Optional[datetime] = None,
     sort_by: Optional[str] = None,
     sort_order: Literal["asc", "desc"] = "desc",
-  ) -> List[Detections]:
+) -> List[DetectionResponse]:
     """
-    Retrieve multiple detections with optional filters and sorting.
-
-    Args:
-        skip: Number of records to skip (for pagination).
-        limit: Maximum number of records to return.
-        species: Case-insensitive partial match filter for species name.
-        start_date: Filter for detections after this datetime.
-        end_date: Filter for detections before this datetime.
-        sort_by: Column to sort by ('detection_time' or 'confidence').
-        sort_order: Sorting direction ('asc' or 'desc').
-
-    Returns:
-        A list of matching Detections.
+    Return enriched detection results joined with recording metadata.
     """
-    query = self.db.query(Detections)
-    
+    query = (
+        self.db.query(
+            Detection.detection_time,
+            Detection.species,
+            Detection.scientific_name,
+            Detection.confidence,
+            Detection.start_sec,
+            Detection.end_sec,
+            Recording.file_name,
+            Recording.recording_datetime,
+            Recording.lat,
+            Recording.lon,
+        )
+        .join(Recording, Detection.recording_id == Recording.id)
+    )
+
     if species:
-        query = query.filter(Detections.species.ilike(f"%{species}%"))
+        query = query.filter(Detection.species.ilike(f"%{species}%"))
     if start_date and end_date:
-        query = query.filter(Detections.detection_time.between(start_date, end_date))
+        query = query.filter(Detection.detection_time.between(start_date, end_date))
     elif start_date:
-        query = query.filter(Detections.detection_time >= start_date)
+        query = query.filter(Detection.detection_time >= start_date)
     elif end_date:
-        query = query.filter(Detections.detection_time <= end_date)
-    if sort_by and hasattr(Detections, sort_by):
-        sort_column = getattr(Detections, sort_by)
-        order_func = sort_column.asc if sort_order == "asc" else sort_column.desc
-        query = query.order_by(order_func())
+        query = query.filter(Detection.detection_time <= end_date)
 
-    return query.offset(skip).limit(limit).all()
+    if sort_by and hasattr(Detection, sort_by):
+        sort_column = getattr(Detection, sort_by)
+        query = query.order_by(sort_column.asc() if sort_order == "asc" else sort_column.desc())
+
+    results = query.offset(skip).limit(limit).all()
+
+    return [DetectionResponse(**row._asdict()) for row in results]
   
   def delete_detection(self, detection_id: int) -> bool:
     """
@@ -99,7 +104,7 @@ class DetectionRepository:
     Returns:
         True if the detection was deleted, False if not found.
     """
-    detection = self.db.query(Detections).filter(Detections.id == detection_id).first()
+    detection = self.db.query(Detection).filter(Detection.id == detection_id).first()
     if detection is None:
       return False
     self.db.delete(detection)

@@ -36,6 +36,8 @@ if not DATABASE_URL:
         "and that it contains a valid DATABASE_URL."
     )
 
+print("DATABASE_URL used:",DATABASE_URL)
+
 # Create the SQLAlchemy engine
 engine = create_engine(DATABASE_URL)
 

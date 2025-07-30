@@ -22,7 +22,7 @@ def get_detection(detection_id: int, db: Session = Depends(get_db)):
     return detection
 
 
-@router.get("/detections", response_model=List[detection_schema.Detection])
+@router.get("/detections", response_model=List[detection_schema.DetectionResponse])
 def get_detections(
     db: Session = Depends(get_db),
     skip: int = 0,
