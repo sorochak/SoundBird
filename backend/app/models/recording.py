@@ -28,7 +28,7 @@ class Recording(Base):
     # Allows access to child Detections via recording.detections
     # Cascade ensures detections are deleted if the parent recording is deleted
     detections = relationship(
-        "Detections",                  # Related model (the child)
+        "Detection",                  # Related model (the child)
         back_populates="recording",    # Must match the field name in Detections
         cascade="all, delete-orphan"   # Important for cleanup
     )
