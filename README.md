@@ -42,62 +42,37 @@ SoundBird is currently under active development. It will allow users to:
 
 ---
 
-## Data Model
+# Data Model
 
-### Current Schema: `detections` Table
+SoundBird uses a normalized schema with two main tables: `recordings` and `detections`.
 
-| Column               | Type     | Description                                  |
-| -------------------- | -------- | -------------------------------------------- |
-| `id`                 | Integer  | Primary key                                  |
-| `file_name`          | String   | Name of the analyzed file                    |
-| `recording_datetime` | DateTime | Start time of the recording                  |
-| `detection_time`     | DateTime | Timestamp of detected call                   |
-| `species`            | String   | Common species name                          |
-| `scientific_name`    | String   | Scientific name of the species               |
-| `confidence`         | Float    | Confidence score from the model              |
-| `start_sec`          | Float    | Detection start time (relative to recording) |
-| `end_sec`            | Float    | Detection end time                           |
-| `lat`                | Float    | Latitude of the recording location           |
-| `lon`                | Float    | Longitude of the recording location          |
-| `created_at`         | DateTime | Timestamp when row was inserted              |
-| `image_path`         | String   | Optional path to species thumbnail           |
-| `sonogram_path`      | String   | Optional path to generated sonogram          |
-| `snippet_path`       | String   | Optional path to audio snippet               |
+### Table: `recordings`
 
----
+| Column               | Type     | Description                                       |
+| -------------------- | -------- | ------------------------------------------------- |
+| `id`                 | Integer  | Primary key                                       |
+| `file_name`          | String   | Name of the uploaded audio file                   |
+| `status`             | Enum     | Processing status (`PENDING`, `PROCESSING`, etc.) |
+| `lat`                | Float    | Latitude of recording                             |
+| `lon`                | Float    | Longitude of recording                            |
+| `recording_datetime` | DateTime | Start time of the recording                       |
+| `created_at`         | DateTime | Time recording was uploaded                       |
+| `completed_at`       | DateTime | Time analysis finished                            |
+| `error_message`      | String   | Optional error message if processing failed       |
 
-### Planned Schema: Normalized with `recordings` Table
+### Table: `detections`
 
-#### Table: `recordings` (new)
-
-| Column          | Type     | Description                                      |
-| --------------- | -------- | ------------------------------------------------ |
-| `id`            | Integer  | Primary key                                      |
-| `file_name`     | String   | Name of the uploaded audio file                  |
-| `status`        | Enum     | Processing status (`pending`, `completed`, etc.) |
-| `lat`           | Float    | Latitude of recording                            |
-| `lon`           | Float    | Longitude of recording                           |
-| `created_at`    | DateTime | Time recording was uploaded                      |
-| `completed_at`  | DateTime | Time analysis finished                           |
-| `error_message` | String   | Optional error message if processing failed      |
-
-#### Table: `detections` (updated)
-
-| Column               | Type     | Description                                  |
-| -------------------- | -------- | -------------------------------------------- |
-| `id`                 | Integer  | Primary key                                  |
-| `recording_id`       | Integer  | Foreign key referencing `recordings.id`      |
-| `recording_datetime` | DateTime | Start time of the recording                  |
-| `detection_time`     | DateTime | Timestamp of detected call                   |
-| `species`            | String   | Common species name                          |
-| `scientific_name`    | String   | Scientific name of the species               |
-| `confidence`         | Float    | Confidence score from the model              |
-| `start_sec`          | Float    | Detection start time (relative to recording) |
-| `end_sec`            | Float    | Detection end time                           |
-| `image_path`         | String   | Optional path to species thumbnail           |
-| `sonogram_path`      | String   | Optional path to generated sonogram          |
-| `snippet_path`       | String   | Optional path to audio snippet               |
-| `created_at`         | DateTime | Timestamp when row was inserted              |
+| Column            | Type     | Description                             |
+| ----------------- | -------- | --------------------------------------- |
+| `id`              | Integer  | Primary key                             |
+| `recording_id`    | Integer  | Foreign key referencing `recordings.id` |
+| `detection_time`  | DateTime | Timestamp of detected bird call         |
+| `species`         | String   | Common species name                     |
+| `scientific_name` | String   | Scientific name                         |
+| `confidence`      | Float    | Model confidence score                  |
+| `start_sec`       | Float    | Start of call (in seconds)              |
+| `end_sec`         | Float    | End of call (in seconds)                |
+| `created_at`      | DateTime | Timestamp when detection was recorded   |
 
 ---
 
