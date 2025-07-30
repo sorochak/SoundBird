@@ -16,12 +16,12 @@ SoundBird is currently under active development. It will allow users to:
 
 ## Current Features
 
-- **Audio Analysis with BirdNET**: Detects bird species automatically from uploaded `.wav` recordings using BirdNET.
-- **Detection Persistence with PostgreSQL**: After each audio file is analyzed, all detections are saved directly to PostgreSQL. Batched inserts improve performance, and detection timestamps are parsed from filenames.
-- **Dynamic Species Thumbnail Generation**: Uses generative AI to create realistic species thumbnails based on real bird traits, enriching species profiles.
-- **Wikipedia Species Descriptions**: Fetches detailed descriptions to enrich detection results.
-- **Automated Data Pipeline**: Processes large batches of field recordings into structured outputs, saving results as `.csv` and `.json`.
-- **Scalable Web Architecture**: Designed to grow into a cloud-based platform with map-based exploration, detection timelines, habitat overlays, and more.
+- **Bird Species Detection**: Analyze `.wav` or `.zip` field recordings with BirdNET to detect bird calls.
+- **PostgreSQL Persistence**: Save detections with timestamps, species info, and model confidence scores.
+- **Normalized Data Model**: Link detections to recordings with status tracking (`PENDING`, `COMPLETED`, etc.).
+- **Modular Web Architecture**: Built with FastAPI, SQLAlchemy, and a repository pattern for clean backend design.
+- **AI-Generated Species Thumbnails**: Use DALL·E 3 to generate realistic images based on bird traits.
+- **Wikipedia Integration**: Enrich detections with species descriptions fetched from Wikipedia.
 
 ---
 
@@ -236,15 +236,57 @@ SoundBird uses PostgreSQL as its database and Alembic for schema migrations.
 
 ## Usage
 
-### Analyze Audio Files
+### Start the Server
 
-Run batch analysis of your `.wav` recordings (requires BirdNET models installed):
+Ensure your PostgreSQL database is running, then start the FastAPI server:
 
 ```bash
-python backend/services/run_audio_analysis.py
+uvicorn backend.app.main:app --reload
 ```
 
-This will analyze all `.wav` files inside the `./recordings/YYYYMMDD/` folder and output detection results to `./outputs/`.
+The app will be available at http://localhost:8000.
+
+## Analyze Audio via API
+
+> **Note:** `.wav` file names must follow the format `YYYYMMDD_HHMMSS.wav`  
+> (e.g., `20250425_073000.wav`) in order to be processed correctly.
+
+You can upload a `.wav` or `.zip` file for analysis using a `curl` command:
+
+```bash
+curl -X POST "http://localhost:8000/analyze" \
+  -H "accept: application/json" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@path/to/audio.wav" \
+  -F "lat=48.4284" \
+  -F "lon=-123.3656"
+```
+
+## Check Analysis Results
+
+Once the analysis is complete, fetch the detections:
+
+```bash
+curl http://localhost:8000/detections | jq
+```
+
+## Filter Detections by Species
+
+You can filter detections by species using the following `curl` command:
+
+```bash
+curl -X 'GET' \
+  'http://127.0.0.1:8000/api/detections?skip=0&limit=100&species=robin&sort_order=desc' \
+  -H 'accept: application/json'
+```
+
+## API Documentation
+
+For interactive API exploration and testing, visit the FastAPI Swagger UI at:
+
+```bash
+http://localhost:8000/docs
+```
 
 ### Generate Bird Thumbnail (Developer Testing)
 
