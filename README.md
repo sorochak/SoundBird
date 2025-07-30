@@ -37,7 +37,6 @@ SoundBird is currently under active development. It will allow users to:
 | **BirdNETlib**     | ML model for bird detection | Provides local, pre-trained species detection from `.wav` files       |
 | **OpenAI API**     | Image generation            | Generates species thumbnails using natural language prompts           |
 | **Pydantic**       | Data validation             | Validates and serializes request and response data in FastAPI         |
-| **TQDM**           | CLI progress visualization  | Visualizes batch analysis progress during long-running scripts        |
 | **python-dotenv**  | Env variable loading        | Keeps secrets and config out of source code, loaded from `.env` file  |
 
 ---
