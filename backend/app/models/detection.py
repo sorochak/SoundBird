@@ -1,7 +1,6 @@
 # backend/app/models/detection.py
 
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import String, Float, DateTime, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -23,10 +22,6 @@ class Detection(Base):
     end_sec: Mapped[float] = mapped_column(Float, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    # Optional fields — currently nullable
-    sonogram_path: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    snippet_path: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-
     # Many-to-one relationship: each detection is linked to one recording
     # Allows access to the parent Recording object via detection.recording
     recording = relationship(
@@ -45,6 +40,4 @@ class Detection(Base):
             f"start_sec={self.start_sec}, "
             f"end_sec={self.end_sec}, "
             f"created_at={self.created_at}, "
-            f"sonogram_path='{self.sonogram_path}', "
-            f"snippet_path='{self.snippet_path}'>"
         )
