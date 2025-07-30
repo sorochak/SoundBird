@@ -16,10 +16,6 @@ class DetectionCreate(BaseModel):
     confidence: float = Field(..., description="Model confidence score between 0.0 and 1.0")
     start_sec: float = Field(..., description="Start time (in seconds) of the detection in the audio file")
     end_sec: float = Field(..., description="End time (in seconds) of the detection in the audio file")
-    lat: float = Field(..., description="Latitude of the recording location")
-    lon: float = Field(..., description="Longitude of the recording location")
-    sonogram_path: Optional[str] = Field(None, description="Path to generated sonogram image")
-    snippet_path: Optional[str] = Field(None, description="Path to audio snippet of the detected bird call")
 
 
 class Detection(BaseModel):
@@ -36,8 +32,6 @@ class Detection(BaseModel):
     confidence: float = Field(..., description="Confidence score of the detection")
     start_sec: float = Field(..., description="Start time of the detected sound (in seconds)")
     end_sec: float = Field(..., description="End time of the detected sound (in seconds)")
-    sonogram_path: Optional[str] = Field(None, description="Path to generated sonogram image")
-    snippet_path: Optional[str] = Field(None, description="Path to audio snippet of the detected bird call")
     created_at: datetime = Field(..., description="Timestamp when this detection was stored")
 
     model_config = {"from_attributes": True}
@@ -57,7 +51,5 @@ class DetectionResponse(BaseModel):
     end_sec: float = Field(..., description="End time of the detected sound (in seconds)")
     lat: float = Field(..., description="Latitude of the recording location")
     lon: float = Field(..., description="Longitude of the recording location")
-    sonogram_path: Optional[str] = Field(None, description="Path to sonogram image")
-    snippet_path: Optional[str] = Field(None, description="Path to audio snippet")
 
     model_config = {"from_attributes": True}
