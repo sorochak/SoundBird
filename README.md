@@ -42,6 +42,18 @@ SoundBird is currently under active development. It will allow users to:
 
 ---
 
+## High-Level System Data Flow
+
+1. User submits a `.wav` or `.zip` file via the `POST /analyze` route.
+2. `routes/analyze.py` receives the file and passes it to `analyze_audio_file()` in `services/audio_analyzer.py`.
+3. `services/audio_analyzer.py` uses BirdNET to analyze audio, enriches detections, and calls the `DetectionRepository` to persist results.
+4. `repositories/detection.py` handles database access and inserts detection records via SQLAlchemy ORM.
+5. `models/detection.py` defines the DB schema (tables and columns).
+6. `schemas/detection.py` defines Pydantic schemas for validation and serialization.
+7. User can fetch stored detections through `GET /detections` and related CRUD endpoints in `routes/detections.py`.
+
+---
+
 # Data Model
 
 SoundBird uses a normalized schema with two main tables: `recordings` and `detections`.
@@ -73,18 +85,6 @@ SoundBird uses a normalized schema with two main tables: `recordings` and `detec
 | `start_sec`       | Float    | Start of call (in seconds)              |
 | `end_sec`         | Float    | End of call (in seconds)                |
 | `created_at`      | DateTime | Timestamp when detection was recorded   |
-
----
-
-## High-Level System Data Flow
-
-1. User submits a `.wav` or `.zip` file via the `POST /analyze` route.
-2. `routes/analyze.py` receives the file and passes it to `analyze_audio_file()` in `services/audio_analyzer.py`.
-3. `services/audio_analyzer.py` uses BirdNET to analyze audio, enriches detections, and calls the `DetectionRepository` to persist results.
-4. `repositories/detection.py` handles database access and inserts detection records via SQLAlchemy ORM.
-5. `models/detection.py` defines the DB schema (tables and columns).
-6. `schemas/detection.py` defines Pydantic schemas for validation and serialization.
-7. User can fetch stored detections through `GET /detections` and related CRUD endpoints in `routes/detections.py`.
 
 ---
 
