@@ -253,7 +253,7 @@ The app will be available at http://localhost:8000.
 You can upload a `.wav` or `.zip` file for analysis using a `curl` command:
 
 ```bash
-curl -X POST "http://localhost:8000/analyze" \
+curl -X POST "http://localhost:8000/api/analyze" \
   -H "accept: application/json" \
   -H "Content-Type: multipart/form-data" \
   -F "file=@path/to/audio.wav" \
@@ -266,7 +266,7 @@ curl -X POST "http://localhost:8000/analyze" \
 Once the analysis is complete, fetch the detections:
 
 ```bash
-curl http://localhost:8000/detections | jq
+curl http://localhost:8000/api/detections | jq
 ```
 
 ## Filter Detections by Species
