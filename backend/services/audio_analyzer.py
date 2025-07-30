@@ -1,14 +1,8 @@
 # audio_analyzer.py
-import csv
-import json
 import logging
-import re
-import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-
-from tqdm import tqdm
+from typing import List
 
 from birdnetlib import Recording as BirdNETRecording
 from birdnetlib.analyzer import Analyzer
@@ -16,7 +10,9 @@ from birdnetlib.analyzer import Analyzer
 from sqlalchemy.orm import Session
 
 from backend.app.repositories.detection import DetectionRepository
+from backend.app.repositories.recording import RecordingRepository
 from backend.app.schemas.detection import DetectionCreate
+from backend.app.schemas.detection import DetectionResponse
 from backend.app.utils.file_utils import calculate_detection_time
 
 logger = logging.getLogger(__name__)
@@ -24,159 +20,87 @@ logger = logging.getLogger(__name__)
 def analyze_audio_file(
     file_path: Path,
     analyzer: Analyzer,
-    lat: float,
-    lon: float,
-    db: Optional[Session] = None
-) -> List[Dict[str, Any]]:
+    recording_id: int,
+    db: Session
+) -> List[DetectionResponse]:
     """
-    Analyze a single .WAV file using BirdNETlib and return a list of detection results.
+    Analyze a single .WAV file using BirdNETlib and store detections linked to the given recording ID.
 
     Args:
         file_path (Path): Path to the .WAV audio file.
         analyzer (Analyzer): BirdNETlib Analyzer instance.
-        lat (float): Latitude of the recording location.
-        lon (float): Longitude of the recording location.
+        recording_id (int): ID of the associated recording row in the DB.
+        db (Session): SQLAlchemy DB session.
 
     Returns:
-        List[Dict[str, Any]]: Parsed detections for the audio file.
+        List[DetectionCreate]: The detection records created.
     """
-    # Extract recording date from filename (e.g., "20250425_073300.WAV")
-    filename = file_path.name
-    date_part = filename.split("_")[0]
-    recording_date = datetime.strptime(date_part, "%Y%m%d")
-
-    recording = BirdNETRecording(
-        analyzer,
-        str(file_path),
-        lat=lat,
-        lon=lon,
-        date=recording_date,
-        min_conf=0.5,
-    )
+    try:
+        # Fetch recording metadata for BirdNET
+        recording_metadata = RecordingRepository(db).get(recording_id)
+        if not recording_metadata:
+            raise ValueError(f"Recording with ID {recording_id} not found")
+        
+        birdnet_recording = BirdNETRecording(
+            analyzer=analyzer,
+            path=str(file_path),
+            lat=recording_metadata.lat,
+            lon=recording_metadata.lon,
+            date=recording_metadata.recording_datetime.date(),
+            min_conf=0.5,
+        )
+        
+        birdnet_recording.analyze()
+        
+    except Exception as e:
+        logger.exception(f"Failed to initialize or run BirdNET on {file_path.name}")
+        raise
     
-    recording.analyze()
+    # Parse detections
+    results_to_save: List[DetectionCreate] = []
+    results_to_return: List[DetectionResponse] = []
     
-    results = []
-    for det in recording.detections:
+    for det in birdnet_recording.detections:
         try:
-            start_sec = det.get("start_time", None)
-            recording_datetime = get_recording_datetime(file_path.name)
-            detection_time = (
-                calculate_detection_time(file_path.name, start_sec)
-                if start_sec is not None else None
+            # Build the DB save schema
+            to_save = DetectionCreate(
+                recording_id=recording_id,
+                detection_time=calculate_detection_time(file_path.name, det["start_time"]),
+                start_sec=det["start_time"],
+                end_sec=det["end_time"],
+                species=det["common_name"],
+                scientific_name=det["scientific_name"],
+                confidence=det["confidence"],
             )
-
-            result = {
-                "file_name": file_path.name,
-                "recording_datetime": recording_datetime.isoformat() if recording_datetime else None,
-                "detection_time": detection_time.isoformat() if detection_time else None,
-                "start_sec": start_sec,
-                "end_sec": det.get("end_time", None),
-                "species": det.get("common_name", "Unknown"),
-                "scientific_name": det.get("scientific_name", "Unknown"),
-                "confidence": det.get("confidence", 0.0),
-                "lat": lat,
-                "lon": lon,
-                "image_path": None,
-                "sonogram_path": None,
-                "snippet_path": None,
-            }
-            results.append(result)
+            results_to_save.append(to_save)
+            
+            # Build the enriched response schema
+            to_return = DetectionResponse(
+                file_name=recording_metadata.file_name,
+                recording_datetime=recording_metadata.recording_datetime,
+                lat=recording_metadata.lat,
+                lon=recording_metadata.lon,
+                detection_time=to_save.detection_time,
+                start_sec=to_save.start_sec,
+                end_sec=to_save.end_sec,
+                species=to_save.species,
+                scientific_name=to_save.scientific_name,
+                confidence=to_save.confidence,
+            )
+            results_to_return.append(to_return)
         except Exception as e:
             logger.exception(f"Error parsing detection in {file_path.name}")
             
-        # save detections from this file to the database
-        if results:
-            if db is None:
-                raise ValueError("Database session is required to save detections")
-
-            try:
-                detection_objects = [DetectionCreate(**r) for r in results]
-                repo = DetectionRepository(db)
-                repo.save_detections(detection_objects)
-                logger.info(f"Inserted {len(results)} detections into DB for {file_path.name}")
-            except Exception as e:
-                logger.error(f"Failed to insert detections into DB for {file_path.name}: {e}")
-                
-    return results
-
-def analyze_audio_directory(
-    directory_path: Path,
-    analyzer: Analyzer,
-    lat: float,
-    lon: float,
-    output_dir="./outputs",
-    output_name="predictions",
-):
-    """
-    Analyze all WAV files in the specified directory using BirdNETlib and save the predictions.
-
-    Args:
-        directory_path (str): Path to the directory containing .wav files.
-        lat (float): Latitude of the recording location.
-        lon (float): Longitude of the recording location.
-        output_dir (str): Directory to save prediction outputs.
-        output_name (str): Base name for output files (without extension).
-    """
-
-    # Prepare output directory
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
-
-    # Collect all .wav and .WAV files
-    wav_files = list(Path(directory_path).glob("*.wav")) + list(
-        Path(directory_path).glob("*.WAV")
-    )
-
-    all_results = []
-
-    logger.info(f"Found {len(wav_files)} audio files in '{directory_path}'")
-    logger.info(f"Using lat={lat}, lon={lon}")
-    logger.info(f"Output will be saved to '{output_dir}'\n")
-
-    start_total = time.time()
-
-    for idx, wav_file in enumerate(tqdm(wav_files, desc="Analyzing audio files", unit="file"), 1):
-        logger.info(f"[{idx}/{len(wav_files)}] Analyzing '{wav_file.name}'...")
+    # Save all parsed detections
+        
+    if results_to_save:
+        logger.info(f"Parsed {len(results_to_save)} detections from {file_path.name}")
         try:
-            detections = analyze_audio_file(wav_file, analyzer, lat, lon)
-            logger.info(f"Detections for {wav_file.name}: {len(detections)}")
-            if detections:
-                logger.debug("Sample detection:", detections[0])
-            all_results.extend(detections)
+            DetectionRepository(db).save_detections(results_to_save)
+            logger.info(f"Saved {len(results_to_save)} detections for recording ID {recording_id}")
         except Exception as e:
-            logger.exception(f"Error analyzing '{wav_file.name}': {e}\n")
-
-    # Save all results
-    json_path = Path(output_dir) / f"{output_name}.json"
-    with open(json_path, "w") as f:
-        json.dump(all_results, f, indent=2)
-
-    csv_path = Path(output_dir) / f"{output_name}.csv"
-    with open(csv_path, "w", newline="") as f:
-        writer = csv.DictWriter(
-            f,
-            fieldnames=[
-                "file_name",
-                "recording_datetime",
-                "detection_time",
-                "start_sec",
-                "end_sec",
-                "species",
-                "scientific_name",
-                "label",
-                "confidence",
-                "lat",
-                "lon",
-                "image_path",
-                "sonogram_path",
-                "snippet_path",
-            ],
-        )
-        writer.writeheader()
-        writer.writerows(all_results)
-
-    total_time = time.time() - start_total
-    logger.info(f"[INFO] Analysis complete. {len(all_results)} predictions saved.")
-    logger.info(f" - JSON: {json_path}")
-    logger.info(f" - CSV:  {csv_path}")
-    logger.info(f"[INFO] Total time: {total_time:.2f}s")
+            logger.exception(f"Failed to save detections to DB for {file_path.name}")
+    else:
+        logger.warning(f"No detections found in file {file_path.name}")
+                
+    return results_to_return
