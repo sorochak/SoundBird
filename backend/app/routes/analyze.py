@@ -7,6 +7,9 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 from sqlalchemy.orm import Session
 
 from backend.services.audio_analyzer import analyze_audio_file
+from backend.app.utils.file_utils import get_recording_datetime, validate_upload
+from backend.app.repositories.recording import RecordingRepository
+from backend.app.models.recording import RecordingStatus
 from database.config import get_db
 
 router = APIRouter(tags=["analyze"])
@@ -23,93 +26,85 @@ async def analyze_audio(
 ):
     # Get shared BirdNET analyzer instance from app state
     analyzer = request.app.state.analyzer
+    filename = validate_upload(file)
+    recording_repo = RecordingRepository(db)
+    detections = []
+    wav_files = []
+    recording_ids = []
     
-    # Validate that the uploaded file has a filename
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="Uploaded file must have a filename")
+    if filename.endswith(".zip"):
+        with TemporaryDirectory() as tmpdir:
+            zip_path = Path(tmpdir) / filename
+            with open(zip_path, "wb") as out:
+                out.write(await file.read())
 
-    filename = file.filename.lower()
-    
-    # Step 1: Create a new row in the recordings table with status=PENDING
-    db = SessionLocal()
-    try:
-        recording = create_recording(db, file_name=filename, lat=lat, lon=lon)
-        recording_id = recording.id
-    except Exception as e:
-        db.rollback()
-        db.close()
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-    finally:
-        db.close()
+            try:
+                with zipfile.ZipFile(zip_path, "r") as zip_ref:
+                    zip_ref.extractall(tmpdir)
+            except zipfile.BadZipFile:
+                raise HTTPException(status_code=400, detail="Invalid ZIP file")
 
-    if filename.endswith(".wav"):
-        with NamedTemporaryFile(delete=True, suffix=".wav") as tmp:
-            contents = await file.read()
-            tmp.write(contents)
-            tmp.flush()
-            tmp_path = Path(tmp.name)
-            original_filename = file.filename
-            tmp_path_with_name = tmp_path.with_name(original_filename)
-            tmp_path.rename(tmp_path_with_name)
-            logger.info(f"Analyzing uploaded file: {original_filename}")
-            detections = analyze_audio_file(tmp_path_with_name, analyzer, lat, lon, db=db)
-            return {"detections": detections}
+            wav_files = [
+                f for f in Path(tmpdir).rglob("*.[wW][aA][vV]")
+                if not f.name.startswith(("._", "."))
+            ]
 
-        if filename.endswith(".wav"):
-            with NamedTemporaryFile(delete=True, suffix=".wav") as tmp:
-                contents = await file.read()
-                tmp.write(contents)
-                tmp.flush()
-                tmp_path = Path(tmp.name)
-                tmp_path_with_name = tmp_path.with_name(file.filename)
-                tmp_path.rename(tmp_path_with_name)
-                logger.info(f"Analyzing uploaded file: {file.filename}")
-                detections = analyze_audio_file(tmp_path_with_name, analyzer, lat, lon)
-
-        elif filename.endswith(".zip"):
-            with TemporaryDirectory() as tmpdir:
-                tmp_zip_path = Path(tmpdir) / filename
-                with open(tmp_zip_path, "wb") as out:
-                    out.write(await file.read())
-
-            all_detections = []
-            
-            wav_files = list(Path(tmpdir).rglob("*.[wW][aA][vV]"))
             logger.info(f"Found {len(wav_files)} wav files in ZIP archive")
 
             for wav_file in wav_files:
-                if wav_file.name.startswith("._") or wav_file.name.startswith("."):
-                    logger.warning(f"Skipping macOS hidden file: {wav_file.name}")
-                    continue
+                recording = None
+                recording_id = None
+
                 try:
-                    results = analyze_audio_file(wav_file, analyzer, lat, lon, db=db)
-                    all_detections.extend(results)
+                    recording_datetime = get_recording_datetime(wav_file.name)
+                    recording = recording_repo.create(wav_file.name, lat, lon, recording_datetime)
+                    recording_id = recording.id
+
+                    recording_repo.update_status(recording_id, RecordingStatus.PROCESSING)
+
+                    results = analyze_audio_file(wav_file, analyzer, recording_id, db)
+                    detections.extend(results)
+
+                    recording_repo.update_status(recording_id, RecordingStatus.COMPLETED)
+                    recording_ids.append(recording_id)
+
                 except Exception as e:
-                    logger.warning(f"Skipping {wav_file.name}: {e}")
+                    logger.exception(f"Failed to process {wav_file.name}")
+                    if recording_id is not None:
+                        recording_repo.update_status(recording_id, RecordingStatus.FAILED, error_message=str(e))
 
-                detections = []
-                wav_files = list(Path(tmpdir).rglob("*.[wW][aA][vV]"))
-                logger.info(f"Found {len(wav_files)} wav files in ZIP archive")
+    elif filename.endswith(".wav"):
+        with NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+            tmp.write(await file.read())
+            tmp.flush()
+            tmp_path = Path(tmp.name).with_name(filename)
+            tmp_path.rename(tmp_path)
+            
+        recording = None
 
-                for wav_file in wav_files:
-                    try:
-                        results = analyze_audio_file(wav_file, analyzer, lat, lon)
-                        detections.extend(results)
-                    except Exception as e:
-                        logger.warning(f"Skipping {wav_file.name}: {e}")
+        try:
+            recording_datetime = get_recording_datetime(tmp_path.name)
+            recording = recording_repo.create(tmp_path.name, lat, lon, recording_datetime)
+            recording_repo.update_status(recording.id, RecordingStatus.PROCESSING)
 
-        else:
-            raise HTTPException(status_code=400, detail="Only .WAV and .ZIP files are supported")
+            results = analyze_audio_file(tmp_path, analyzer, recording.id, db)
+            detections.extend(results)
 
-        # Step 3: Update to COMPLETED
-        db = SessionLocal()
-        update_recording_status(db, recording_id, RecordingStatus.COMPLETED)
-        db.close()
-        return {"recording_id": recording_id, "status": "completed", "detections": detections}
+            recording_repo.update_status(recording.id, RecordingStatus.COMPLETED)
+            recording_ids.append(recording.id)
 
-    except Exception as e:
-        logger.exception("Error during analysis")
-        db = SessionLocal()
-        update_recording_status(db, recording_id, RecordingStatus.FAILED, error_message=str(e))
-        db.close()
-        raise HTTPException(status_code=500, detail="Internal error during analysis")
+        except Exception as e:
+            logger.exception(f"Failed to process {tmp_path.name}")
+            if recording is not None:
+                recording_repo.update_status(recording.id, RecordingStatus.FAILED, error_message=str(e))
+        finally:
+            tmp_path.unlink(missing_ok=True)
+
+    else:
+        raise HTTPException(status_code=400, detail="Only .WAV and .ZIP files are supported")
+
+    return {
+        "recording_ids": recording_ids,
+        "status": "completed",
+        "detections": detections,
+    }
