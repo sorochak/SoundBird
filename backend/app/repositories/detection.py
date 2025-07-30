@@ -5,7 +5,8 @@ from typing import List, Optional, Literal
 from datetime import datetime
 
 from backend.app.models.detection import Detection
-from backend.app.schemas.detection import DetectionCreate
+from backend.app.schemas.detection import DetectionCreate, DetectionResponse
+from backend.app.models.recording import Recording
 
 class DetectionRepository:
   def __init__(self, db: Session):
@@ -56,24 +57,26 @@ class DetectionRepository:
     end_date: Optional[datetime] = None,
     sort_by: Optional[str] = None,
     sort_order: Literal["asc", "desc"] = "desc",
-  ) -> List[Detection]:
+) -> List[DetectionResponse]:
     """
-    Retrieve multiple detections with optional filters and sorting.
-
-    Args:
-        skip: Number of records to skip (for pagination).
-        limit: Maximum number of records to return.
-        species: Case-insensitive partial match filter for species name.
-        start_date: Filter for detections after this datetime.
-        end_date: Filter for detections before this datetime.
-        sort_by: Column to sort by ('detection_time' or 'confidence').
-        sort_order: Sorting direction ('asc' or 'desc').
-
-    Returns:
-        A list of matching Detections.
+    Return enriched detection results joined with recording metadata.
     """
-    query = self.db.query(Detection)
-    
+    query = (
+        self.db.query(
+            Detection.detection_time,
+            Detection.species,
+            Detection.scientific_name,
+            Detection.confidence,
+            Detection.start_sec,
+            Detection.end_sec,
+            Recording.file_name,
+            Recording.recording_datetime,
+            Recording.lat,
+            Recording.lon,
+        )
+        .join(Recording, Detection.recording_id == Recording.id)
+    )
+
     if species:
         query = query.filter(Detection.species.ilike(f"%{species}%"))
     if start_date and end_date:
@@ -82,12 +85,14 @@ class DetectionRepository:
         query = query.filter(Detection.detection_time >= start_date)
     elif end_date:
         query = query.filter(Detection.detection_time <= end_date)
+
     if sort_by and hasattr(Detection, sort_by):
         sort_column = getattr(Detection, sort_by)
-        order_func = sort_column.asc if sort_order == "asc" else sort_column.desc
-        query = query.order_by(order_func())
+        query = query.order_by(sort_column.asc() if sort_order == "asc" else sort_column.desc())
 
-    return query.offset(skip).limit(limit).all()
+    results = query.offset(skip).limit(limit).all()
+
+    return [DetectionResponse(**row._asdict()) for row in results]
   
   def delete_detection(self, detection_id: int) -> bool:
     """
