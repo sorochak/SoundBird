@@ -17,44 +17,9 @@ from sqlalchemy.orm import Session
 
 from backend.app.repositories.detection import DetectionRepository
 from backend.app.schemas.detection import DetectionCreate
+from backend.app.utils.file_utils import calculate_detection_time
 
 logger = logging.getLogger(__name__)
-
-def get_recording_datetime(filename:str) -> datetime:
-    """
-    Extract the recording date and time from the filename.
-
-    Args:
-        filename (str): WAV file name in the format 'YYYYMMDD_HHMMSS.WAV'
-
-    Returns:
-        datetime: Recording date and time as a datetime object.
-    
-    Raises:
-        ValueError: If the filename format is invalid.
-    """
-    filename = filename.lower()
-    match = re.match(r"(\d{8})_(\d{6})\.wav", filename)
-    if not match:
-        raise ValueError(f"Invalid filename format: {filename}")
-
-    date_str, time_str = match.groups()
-    return datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H%M%S")
-
-def calculate_detection_time(filename: str, start_sec: float) -> datetime:
-    """
-    Calculates the actual time a detection occurred, based on the file name and start seconds.
-
-    Args:
-        filename (str): The name of the file.
-        start_sec (float): Seconds after the recording began.
-
-    Returns:
-        datetime: The exact timestamp of the detection.
-    """
-    recording_start = get_recording_datetime(filename)
-    return recording_start + timedelta(seconds=start_sec)
-
 
 def analyze_audio_file(
     file_path: Path,
