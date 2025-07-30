@@ -300,6 +300,7 @@ To run all tests using `pytest`:
 ```bash
 cd backend
 pytest -v
+```
 
 ## Requirements
 
@@ -347,4 +348,7 @@ We gratefully acknowledge the BirdNET project's contributions to bioacoustic res
 ## License
 
 This project is licensed under the MIT License.
+
+```
+
 ```
