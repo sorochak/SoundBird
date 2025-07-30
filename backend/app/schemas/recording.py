@@ -3,16 +3,8 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional
-from enum import Enum
+from backend.app.models.recording import RecordingStatus
 
-class RecordingStatus(str, Enum):
-    """
-    Enum for the processing status of a recording.
-    """
-    PENDING = "pending"
-    PROCESSING = "processing"
-    COMPLETED = "completed"
-    FAILED = "failed"
     
 class RecordingCreate(BaseModel):
     """
