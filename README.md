@@ -258,7 +258,7 @@ curl -X POST "http://localhost:8000/api/analyze" \
   -H "Content-Type: multipart/form-data" \
   -F "file=@path/to/audio.wav" \
   -F "lat=48.4284" \
-  -F "lon=-123.3656"
+  -F "lon=-123.3656" | jq
 ```
 
 ## Check Analysis Results
@@ -276,7 +276,7 @@ You can filter detections by species using the following `curl` command:
 ```bash
 curl -X 'GET' \
   'http://127.0.0.1:8000/api/detections?skip=0&limit=100&species=robin&sort_order=desc' \
-  -H 'accept: application/json'
+  -H 'accept: application/json' | jq
 ```
 
 ## API Documentation
