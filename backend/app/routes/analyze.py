@@ -77,8 +77,7 @@ async def analyze_audio(
         with NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
             tmp.write(await file.read())
             tmp.flush()
-            tmp_path = Path(tmp.name).with_name(filename)
-            tmp_path.rename(tmp_path)
+            tmp_path = Path(tmp.name)
             
         recording = None
 
