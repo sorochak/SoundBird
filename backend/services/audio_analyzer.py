@@ -33,7 +33,7 @@ def analyze_audio_file(
         db (Session): SQLAlchemy DB session.
 
     Returns:
-        List[DetectionCreate]: The detection records created.
+        List[DetectionResponse]: The detection records created.
     """
     try:
         # Fetch recording metadata for BirdNET
